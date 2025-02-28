@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  tfx:
+    build: .
+    container_name: tfx
+    ports:
+      - "8888:8888"
+      - "6006:6006"
+    volumes:
+      - ./notebooks:/tfx/notebooks
+      - ./data:/tfx/data
+    working_dir: /tfx/notebooks
