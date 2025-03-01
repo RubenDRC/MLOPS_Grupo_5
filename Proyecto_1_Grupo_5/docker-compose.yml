@@ -8,6 +8,6 @@ services:
       - "8888:8888"
       - "6006:6006"
     volumes:
-      - ./notebooks:/tfx/notebooks
+      - ./notebooks:/tfx/notebooks  # Este volumen monta la carpeta notebooks
       - ./data:/tfx/data
     working_dir: /tfx/notebooks
