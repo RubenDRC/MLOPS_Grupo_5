@@ -1,4 +1,4 @@
-# MLOps - TFX (Grupo 5 - Clase de los Martes)
+# Proyecto 1: MLOps - TFX (Grupo 5 - Clase de los Martes)
 
 Este repositorio contiene un entorno de desarrollo para pipelines de **TensorFlow Extended (TFX)** dentro de **Docker** y **docker-compose**, brindando un flujo de trabajo reproducible para proyectos de Machine Learning.  
 
@@ -22,7 +22,7 @@ La configuración está diseñada mediante las siguientes etapas:
 
 ## Uso con Docker Compose
 
-Para iniciar el contenedor TFX, basta con ejecutar:
+Para iniciar el contenedor TFX:
 
 ```bash
 docker-compose up --build
