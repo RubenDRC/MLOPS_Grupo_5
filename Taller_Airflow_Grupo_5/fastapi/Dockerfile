@@ -1,23 +1,20 @@
-# Usa una imagen base de Python
-FROM python:3.10
+# fastapi/Dockerfile
+FROM python:3.9-slim
 
-# Configurar el directorio de trabajo
 WORKDIR /app
 
-# Instalar UV
-RUN pip install --no-cache-dir --upgrade pip && pip install uv
+# Copiamos el archivo de requerimientos
+COPY requirements.txt /app/requirements.txt
 
-# Copiar el archivo de dependencias
-COPY pyproject.toml ./
+# Instalamos dependencias
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Instalar dependencias del proyecto con UV
-RUN uv pip install --system --deps pyproject.toml
+# Copiamos el main.py
+COPY main.py /app/main.py
 
-# Copiar el código de la aplicación
-COPY . .
+# Exponemos el puerto 8989
+EXPOSE 8989
 
-# Exponer el puerto 8888
-EXPOSE 8888
+# Comando por defecto
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8989"]
 
-# Comando para iniciar FastAPI con Uvicorn usando UV
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8888", "--reload"]

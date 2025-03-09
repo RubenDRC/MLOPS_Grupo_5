@@ -1,28 +1,17 @@
-# Creación de la API con FastAPI
+# fastapi/main.py
 
-# ------------------------------------------------------------------------------ 
-# Importaciones necesarias
-# ------------------------------------------------------------------------------ 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import joblib
 import os
-import uvicorn
 import pandas as pd
-from typing import Optional
 
-# ------------------------------------------------------------------------------ 
-# 1. Creación de la app
-# ------------------------------------------------------------------------------ 
 app = FastAPI(
     title="Penguin Classifier API",
     description="API que permite cargar modelos de ML para clasificar pingüinos.",
     version="2.0"
 )
 
-# ------------------------------------------------------------------------------ 
-# 2. Definimos el esquema de datos de entrada con Pydantic 
-# ------------------------------------------------------------------------------ 
 class PenguinFeatures(BaseModel):
     island: str
     culmen_length_mm: float
@@ -31,97 +20,62 @@ class PenguinFeatures(BaseModel):
     body_mass_g: float
     sex: str
 
-# ------------------------------------------------------------------------------ 
-# 3. Variables globales para almacenar los modelos 
-# ------------------------------------------------------------------------------ 
+# Diccionario global de modelos
 models = {}
 
+def load_models():
+    global models
+    model_directory = "/app/models"  # Montado con volumen
 
+    if not os.path.exists(model_directory):
+        print(f"Directorio de modelos no encontrado: {model_directory}")
+        return
 
-# ------------------------------------------------------------------------------ 
-# 5. Endpoint raíz ("/") -> Evita 404 al acceder a la raíz
-# ------------------------------------------------------------------------------ 
+    models.clear()
+    for model_file in os.listdir(model_directory):
+        if model_file.endswith(".pkl"):
+            model_path = os.path.join(model_directory, model_file)
+            model_name = model_file.replace(".pkl", "")
+            print(f"Cargando modelo: {model_name} desde {model_path}")
+            try:
+                models[model_name] = joblib.load(model_path)
+            except Exception as e:
+                print(f"Error al cargar el modelo {model_name}: {e}")
+
+@app.on_event("startup")
+def startup_event():
+    # Se llama cuando inicia la app
+    load_models()
+
+@app.post("/refresh")
+def refresh_models():
+    load_models()
+    return {"message": "Modelos recargados", "available_models": list(models.keys())}
+
 @app.get("/")
 def read_root():
-    """
-    Mensaje de bienvenida al acceder a la raíz.
-    """
     return {
         "message": "¡Bienvenido a la Penguin Classifier API!",
         "docs": "Visita /docs para la documentación interactiva.",
         "models_endpoint": "Visita /models para ver los modelos disponibles."
     }
 
-
-# 4. Endpoint para cargar los modelos manualmente
-@app.get("/load_models")
-def load_models_manually():
-    """
-    Carga los modelos en memoria manualmente cuando se hace una solicitud GET.
-    """
-    global models
-    model_directory = "/data/models"  # Ruta donde los modelos .pkl están montados
-
-    # Verificar que el directorio exista
-    if not os.path.exists(model_directory):
-        return {"error": f"Directorio de modelos no encontrado: {model_directory}"}
-    
-    # Buscar todos los archivos .pkl en el directorio 'models'
-    for model_file in os.listdir(model_directory):
-        if model_file.endswith(".pkl"):
-            model_path = os.path.join(model_directory, model_file)
-            model_name = model_file.replace(".pkl", "")  # Nombre del modelo (sin extensión)
-            print(f"Cargando modelo: {model_name} desde {model_path}")
-            models[model_name] = joblib.load(model_path)
-
-    return {"message": "Modelos cargados correctamente.", "models_loaded": list(models.keys())}
-    
-# ------------------------------------------------------------------------------ 
-# 6. Endpoint para listar los modelos disponibles ("/models")
-# ------------------------------------------------------------------------------ 
 @app.get("/models")
 def list_models():
-    """
-    Retorna la lista de modelos disponibles 
-    para que el usuario sepa qué nombres puede usar.
-    """
     return {"available_models": list(models.keys())}
 
-# ------------------------------------------------------------------------------ 
-# 7. Endpoint de predicción ("/predict")
-# ------------------------------------------------------------------------------ 
 @app.post("/predict")
-def predict_species(
-    data: PenguinFeatures, 
-    model_name: str
-):
-    """
-    Endpoint para predecir la especie de pingüino.
-
-    - 'data': objeto JSON con los features (island, culmen_length_mm, etc.)
-    - 'model_name': el nombre del modelo (uno de los modelos cargados)
-
-    Ejemplo de llamada:
-      POST /predict?model_name=Logistic regression
-      {
-        "island": "Biscoe",
-        "culmen_length_mm": 50.0,
-        "culmen_depth_mm": 18.5,
-        "flipper_length_mm": 200.0,
-        "body_mass_g": 4000.0,
-        "sex": "MALE"
-      }
-    """
-    # Verificar que el modelo solicitado está en 'models'
+def predict_species(data: PenguinFeatures, model_name: str):
     if model_name not in models:
-        return {
-            "error": f"El modelo '{model_name}' no está disponible.",
-            "available_models": list(models.keys())
-        }
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": f"El modelo '{model_name}' no está disponible.",
+                "available_models": list(models.keys())
+            }
+        )
 
     chosen_model = models[model_name]
-
-    # Convertir la data de entrada en un DataFrame
     input_df = pd.DataFrame([{
         "island": data.island,
         "culmen_length_mm": data.culmen_length_mm,
@@ -131,11 +85,16 @@ def predict_species(
         "sex": data.sex
     }])
 
-    # Hacer la predicción
-    prediction = chosen_model.predict(input_df)
+    try:
+        prediction = chosen_model.predict(input_df)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error durante la predicción: {e}")
 
-    # Retornar la predicción
     return {
         "model_used": model_name,
-        "prediction": prediction[0]  # Devolver el valor de predicción
+        "prediction": prediction[0]
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8989, reload=True)

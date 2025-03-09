@@ -1,20 +1,20 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-from airflow.hooks.base import BaseHook
 from airflow.models import Connection
 from airflow.settings import Session
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 import mysql.connector
 
-# Definir los argumentos del DAG
 default_args = {
     'start_date': days_ago(1),
     'retries': 1
 }
 
-# Crear la conexión a MySQL si no existe
 def create_mysql_connection():
+    """
+    Crea la conexión en Airflow (mysql_default) si no existe
+    """
     session = Session()
     conn_id = "mysql_default"
     existing_conn = session.query(Connection).filter(Connection.conn_id == conn_id).first()
@@ -22,7 +22,7 @@ def create_mysql_connection():
         new_conn = Connection(
             conn_id=conn_id,
             conn_type="mysql",
-            host="mysql",  # Nombre del servicio en Docker
+            host="mysql",
             schema="airflow",
             login="airflow",
             password="airflow",
@@ -30,14 +30,15 @@ def create_mysql_connection():
         )
         session.add(new_conn)
         session.commit()
-        print("Conexión a MySQL creada correctamente.")
+        print("Conexión a MySQL creada correctamente (mysql_default).")
     else:
-        print("La conexión a MySQL ya existe.")
+        print("La conexión 'mysql_default' ya existe.")
     session.close()
 
-
-# Función para verificar y resetear la tabla
 def DropAndCreate():
+    """
+    Elimina la tabla 'penguins' si existe y la crea de nuevo.
+    """
     conn = None
     cursor = None
     try:
@@ -48,11 +49,7 @@ def DropAndCreate():
             database="airflow"
         )
         cursor = conn.cursor()
-        
-        # Verificar si la tabla existe y eliminarla
         cursor.execute("DROP TABLE IF EXISTS penguins;")
-        
-        # Crear la tabla si no existe
         cursor.execute('''
             CREATE TABLE penguins (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -65,9 +62,8 @@ def DropAndCreate():
                 sex VARCHAR(10)
             );
         ''')
-        
         conn.commit()
-        print("Tabla 'penguins' creada correctamente o reiniciada.")
+        print("Tabla 'penguins' creada correctamente.")
     except Exception as e:
         print(f"Error al crear/reiniciar la tabla: {e}")
         raise e
@@ -78,35 +74,29 @@ def DropAndCreate():
             conn.close()
         print("Conexión a MySQL cerrada correctamente.")
 
-
-# Definir el DAG
 with DAG(
     dag_id='Drop_And_Create_Table',
-    description='Elimina y crea tabla en MySql',
+    description='Elimina y crea tabla en MySQL',
     default_args=default_args,
     schedule_interval='@daily',
-    catchup=False #No ejecutar procesos historicos o anteriores a la fecha
+    catchup=False
 ) as dag:
 
-
-     # Tarea con PythonOperator para crear la conexión si no existe
     crear_conexion_mysql = PythonOperator(
         task_id='crear_conexion_mysql',
         python_callable=create_mysql_connection
     )
 
-
-    # Tarea con PythonOperator para verificar y reiniciar la tabla
-    Eliminar_crear_tabla = PythonOperator(
+    eliminar_crear_tabla = PythonOperator(
         task_id='Eliminar_Crear_tabla',
         python_callable=DropAndCreate
     )
 
-     # Tarea para disparar el siguiente DAG automáticamente
-    trigger_siguiente_tarea= TriggerDagRunOperator(
-        task_id='trigger_Drop_And_Create_Table',
-        trigger_dag_id='Load_Data',  # Nombre del DAG a ejecutar
-        wait_for_completion=False  # Si True, espera a que el segundo DAG termine antes de completar este DAG
+    # Dispara el DAG Load_Data
+    trigger_load_data = TriggerDagRunOperator(
+        task_id='trigger_load_data_dag',
+        trigger_dag_id='Load_Data',
+        wait_for_completion=False
     )
 
-    crear_conexion_mysql >> Eliminar_crear_tabla >> trigger_siguiente_tarea
+    crear_conexion_mysql >> eliminar_crear_tabla >> trigger_load_data
