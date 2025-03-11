@@ -84,12 +84,11 @@ with DAG(
     )
 
     # Tarea para disparar el siguiente DAG automáticamente
-    '''
+    
     trigger_siguiente_tarea= TriggerDagRunOperator(
         task_id='trigger_Load_Data',
-        trigger_dag_id='Preprocesing_Data',  # Nombre del DAG a ejecutar
+        trigger_dag_id='Preprocess_Data',  # Nombre del DAG a ejecutar
         wait_for_completion=False  # Si True, espera a que el segundo DAG termine antes de completar este DAG
     )
-    '''
 
-    tarea_validar_archivo >> tarea_cargar_datos
+    tarea_validar_archivo >> tarea_cargar_datos >> trigger_siguiente_tarea
