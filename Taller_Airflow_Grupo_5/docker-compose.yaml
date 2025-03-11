@@ -72,12 +72,13 @@ x-airflow-common:
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
-    _PIP_ADDITIONAL_REQUIREMENTS: "uv apache-airflow-providers-mysql mysql-connector-python"
+    _PIP_ADDITIONAL_REQUIREMENTS: "uv apache-airflow-providers-mysql mysql-connector-python joblib scikit-learn"
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - ./data:/data 
+    - ./data:/data
+    - shared_models:/data/models
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -122,6 +123,8 @@ services:
     command: webserver
     ports:
       - "8080:8080"
+    volumes:
+      - shared_models:/data/models  #  Asegurar que el volumen está montado correctamente
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
@@ -286,7 +289,12 @@ services:
     depends_on:
       - airflow-webserver
     volumes:      
-      - ./data/models:/models  # Volumen único compartido
+      - shared_models:/models  # Volumen único compartido
 
 volumes:
-  data:
+  shared_models:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+

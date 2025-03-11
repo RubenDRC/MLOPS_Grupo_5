@@ -60,7 +60,7 @@ def load_models_manually():
     Carga los modelos en memoria manualmente cuando se hace una solicitud GET.
     """
     global models
-    model_directory = "/data/models"  # Ruta donde los modelos .pkl están montados
+    model_directory = "/models"  # Ruta donde los modelos .pkl están montados
 
     # Verificar que el directorio exista
     if not os.path.exists(model_directory):
