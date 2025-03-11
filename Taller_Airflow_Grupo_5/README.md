@@ -52,6 +52,19 @@ El volumen `data` contiene los siguientes subdirectorios:
 5. **Acceder a FastAPI:**
    - Documentación Swagger UI: [http://localhost:8888/docs](http://localhost:8888/docs)
 
+6. **Parámetros para predicción**
+   Se recomienda utilizar los siguientes para generar la predicción dentro de la api:
+   ```bash
+      {
+        "island": "Biscoe",
+        "culmen_length_mm": 50.0,
+        "culmen_depth_mm": 18.5,
+        "flipper_length_mm": 200.0,
+        "body_mass_g": 4000.0,
+        "sex": "MALE"
+      }
+   ```
+
 ## Comandos Útiles
 ### Parar los contenedores sin eliminarlos:
 ```bash
