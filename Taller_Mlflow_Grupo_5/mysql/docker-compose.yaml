@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # ---------------- MySQL para MLflow ----------------
+  mysql_mlflow:
+    container_name: mysql_mlflow
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: mlflow_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admingrupo5
+      MYSQL_AUTHENTICATION_PLUGIN: mysql_native_password
+    ports:
+      - "3307:3306"  # Puerto diferente para MLflow
+    volumes:
+      - mysql_mlflow_data:/var/lib/mysql
+    restart: unless-stopped
+
+  # ---------------- MySQL para Datos ----------------
+  mysql_data:
+    container_name: mysql_data
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: data_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admingrupo5
+      MYSQL_AUTHENTICATION_PLUGIN: mysql_native_password
+    ports:
+      - "3308:3306"  # Puerto diferente para la base de datos de datos
+    volumes:
+      - mysql_data_storage:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  mysql_mlflow_data:
+  mysql_data_storage:
+
