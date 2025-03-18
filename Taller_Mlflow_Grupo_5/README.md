@@ -98,20 +98,23 @@ docker ps
 ## Prueba de Inferencia con FastAPI
 
 ### 1. Realizar una Predicción
-```{
+```
+{
     "island": "Biscoe",
     "culmen_length_mm": 50.0,
     "culmen_depth_mm": 18.5,
     "flipper_length_mm": 200.0,
     "body_mass_g": 4000.0,
     "sex": "MALE"
-  }'
+  }
 ```
 
 ## Maquina de ejecución
 
 ### IP
-```10.43.101.195
+```
+10.43.101.195
+
 ```
 ## Autores
 Desarrollado por Grupo 5.
