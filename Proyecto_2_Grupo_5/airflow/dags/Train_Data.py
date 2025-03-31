@@ -9,7 +9,12 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import LabelEncoder
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime
+from airflow.utils.dates import days_ago
+
+default_args = {
+    'start_date': days_ago(1),
+    'retries': 1
+}
 
 # Configuración de la conexión a MySQL
 DB_CONFIG = {
@@ -20,116 +25,96 @@ DB_CONFIG = {
     "port": 3308
 }
 
-# Función para obtener datos desde MySQL
-def obtener_datos():
-    try:
-        # Conectar a MySQL
-        conn = mysql.connector.connect(**DB_CONFIG)
-        cursor = conn.cursor()
+# Función para entrenar el modelo
+def entrenar_modelo():
+    # Conectar a MySQL
+    conn = mysql.connector.connect(**DB_CONFIG)
+    cursor = conn.cursor()
 
-        # Obtener datos del conjunto de datos 'covertype'
-        cursor.execute("SELECT * FROM covertype")
-        df = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
+    # Obtener datos de la tabla 'covertype_clean'
+    cursor.execute("SELECT * FROM covertype_clean")
+    df = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
 
-        # Cerrar conexión a MySQL
-        cursor.close()
-        conn.close()
+    # Cerrar conexión a MySQL
+    cursor.close()
+    conn.close()
 
-        print("Datos cargados exitosamente desde MySQL")
-        return df
-
-    except mysql.connector.Error as err:
-        print(f"Error al conectar a MySQL: {err}")
-        raise
-
-# Función para preparar los datos y dividirlos en entrenamiento y prueba
-def preparar_datos(df):
-    # Separar las características y la variable objetivo
-    X = df.drop(columns=["Cover_Type"])  # Asumimos que 'Cover_Type' es la columna objetivo
+    # Separar características y variable objetivo
+    X = df.drop(columns=["Cover_Type"])
     y = df["Cover_Type"]
 
-    # Convertir la variable objetivo a valores numéricos con LabelEncoder
-    label_encoder = LabelEncoder()
-    y = label_encoder.fit_transform(y)
+    # Convertir columnas categóricas
+    columnas_categoricas = ['Wilderness_Area', 'Soil_Type']
+    label_encoders = {}
+    for col in columnas_categoricas:
+        le = LabelEncoder()
+        X[col] = le.fit_transform(X[col])
+        label_encoders[col] = le
 
-    # Guardar el LabelEncoder para usarlo en la inferencia
-    with open("/tmp/label_encoder.pkl", "wb") as f:
-        pickle.dump(label_encoder, f)
+    # Guardar codificadores
+    with open("/tmp/label_encoders.pkl", "wb") as f:
+        pickle.dump(label_encoders, f)
+
+    # Convertir variable objetivo
+    label_encoder_y = LabelEncoder()
+    y = label_encoder_y.fit_transform(y)
+    with open("/tmp/label_encoder_y.pkl", "wb") as f:
+        pickle.dump(label_encoder_y, f)
 
     # Dividir en entrenamiento y prueba
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    return X_train, X_test, y_train, y_test, "/tmp/label_encoder.pkl"
+    # Configuración de las variables de entorno de S3 y AWS
+    os.environ['MLFLOW_S3_ENDPOINT_URL'] = "http://10.43.101.195:9000"
+    os.environ['AWS_ACCESS_KEY_ID'] = 'admin'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'supersecret'
 
-# Función para realizar el entrenamiento con GridSearchCV y registrar el modelo en MLflow
-def entrenar_modelo(X_train, y_train, label_encoder_path):
     # Configuración de MLflow
     mlflow.set_tracking_uri("http://10.43.101.195:5000")
-    mlflow.set_experiment("covertype_model_experiment")
+    mlflow.set_experiment("Proyecto_2_Grupo_5")
 
-    # Definir GridSearch con hiperparámetros
+    # Autolog sin registrar firma (por compatibilidad con Pydantic v1)
+    mlflow.sklearn.autolog(
+        log_model_signatures=True,
+        log_input_examples=True,
+        registered_model_name="RandomForestModel"
+    )
+
+    # Grid search
     param_grid = {
         "n_estimators": [25, 50, 75, 100],
         "max_depth": [4, 6, 8, 10],
         "max_features": [5, 10, 15]
     }
 
-    # Crear modelo base
     rf = RandomForestClassifier(random_state=42)
-
-    # Aplicar GridSearchCV para encontrar la mejor combinación
     grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=3, verbose=2)
 
-    # Ejecutar el entrenamiento y registrar el modelo en MLflow
+    # Entrenamiento y logging
     with mlflow.start_run(run_name="rf_grid_search_covertype"):
         grid_search.fit(X_train, y_train)
-
-        # Obtener mejor modelo
         best_model = grid_search.best_estimator_
 
-        # Registrar hiperparámetros en MLflow
         mlflow.log_params(grid_search.best_params_)
-
-        # Guardar el mejor modelo en MLflow
-        mlflow.sklearn.log_model(best_model, "RandomForestModel")
-
-        # Subir el LabelEncoder a MLflow
-        mlflow.log_artifact(label_encoder_path)
+        mlflow.sklearn.log_model(best_model, "RandomForestModel")        
+        mlflow.log_artifact("/tmp/label_encoders.pkl")
+        mlflow.log_artifact("/tmp/label_encoder_y.pkl")
 
         print(f"Mejor modelo encontrado con parámetros: {grid_search.best_params_}")
-
-    print("Todos los experimentos fueron registrados en MLflow.")
+        print("Todos los experimentos fueron registrados en MLflow.")
 
 # Definición del DAG
 with DAG(
-    dag_id='entrenamiento_random_forest_covertype_dag',
-    start_date=datetime(2025, 3, 28),
-    schedule_interval=None,  # Esto asegura que el DAG se ejecute manualmente
+    dag_id='Train_Model',
+    default_args=default_args,
+    schedule_interval=None,
     catchup=False
 ) as dag:
 
-    # Tarea para obtener los datos desde MySQL
-    tarea_obtener_datos = PythonOperator(
-        task_id='obtener_datos',
-        python_callable=obtener_datos,
-        dag=dag
-    )
-
-    # Tarea para preparar los datos (se ejecuta después de obtener los datos)
-    tarea_preparar_datos = PythonOperator(
-        task_id='preparar_datos',
-        python_callable=preparar_datos,
-        op_args=["{{ task_instance.xcom_pull(task_ids='obtener_datos') }}"],  # Usamos XCom para pasar los datos
-        dag=dag
-    )
-
-    # Tarea para entrenar el modelo (se ejecuta después de preparar los datos)
     tarea_entrenar_modelo = PythonOperator(
         task_id='entrenar_modelo',
-        python_callable=entrenar_modelo,
-        op_args=["{{ task_instance.xcom_pull(task_ids='preparar_datos') }}"],  # Usamos XCom para pasar los datos
-        dag=dag
+        python_callable=entrenar_modelo
     )
 
-    # Definir la secuencia de ejecución de las tareas
-    tarea_obtener_datos >> tarea_preparar_datos >> tarea_entrenar_modelo
+    tarea_entrenar_modelo
+

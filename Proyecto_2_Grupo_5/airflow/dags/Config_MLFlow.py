@@ -2,7 +2,14 @@ import os
 import mlflow
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from airflow.utils.dates import days_ago
+
+# Definir los argumentos del DAG
+default_args = {
+    'start_date': days_ago(1),
+    'retries': 1
+}
 
 # Función para configurar MLflow
 def configurar_mlflow():
@@ -16,7 +23,7 @@ def configurar_mlflow():
         mlflow.set_tracking_uri("http://10.43.101.195:5000")  # Verifica que MLflow esté en ejecución
 
         # Configuración del experimento en MLflow
-        mlflow.set_experiment("taller_grupo5")
+        mlflow.set_experiment("Proyecto_2_Grupo_5")
 
         # Configuración del autologging para modelos de scikit-learn
         mlflow.sklearn.autolog(log_model_signatures=True, log_input_examples=True, registered_model_name="RandomForestModel")
@@ -28,8 +35,8 @@ def configurar_mlflow():
 
 # Definición del DAG para configurar MLflow
 with DAG(
-    dag_id='configuracion_mlflow_dag',
-    start_date=datetime(2025, 3, 28),
+    dag_id='Mlflow_Configuration',
+    default_args=default_args,
     schedule_interval=None,  # Esto asegura que el DAG se ejecute manualmente
     catchup=False
 ) as dag:

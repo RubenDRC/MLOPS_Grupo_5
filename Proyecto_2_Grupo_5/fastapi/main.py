@@ -15,17 +15,24 @@ app = FastAPI(
     version="1.0"
 )
 
+# Modelo de entrada adaptado al dataset Covertype
 class PredictionInput(BaseModel):
-    island: str
-    culmen_length_mm: float
-    culmen_depth_mm: float
-    flipper_length_mm: float
-    body_mass_g: float
-    sex: str
+    Elevation: int
+    Aspect: int
+    Slope: int
+    Horizontal_Distance_To_Hydrology: int
+    Vertical_Distance_To_Hydrology: int
+    Horizontal_Distance_To_Roadways: int
+    Hillshade_9am: int
+    Hillshade_Noon: int
+    Hillshade_3pm: int
+    Horizontal_Distance_To_Fire_Points: int
+    Wilderness_Area: str
+    Soil_Type: str
 
 @app.get("/")
 def root():
-    return {"message": "¡Bienvenido a la API de inferencia con MLflow!", "docs": "Visita /docs para la documentación."}
+    return {"message": "¡Bienvenido a la API de inferencia con MLflow V2!", "docs": "Visita /docs para la documentación."}
 
 @app.get("/models")
 def list_models():
@@ -45,41 +52,55 @@ def list_models():
 def predict(input_data: PredictionInput, model_name: str):
     """Realiza una predicción usando la versión en 'Production' del modelo en MLflow."""
     client = mlflow.tracking.MlflowClient()
-    
-    # ** Obtener la versión en Production**
     versions = client.get_latest_versions(model_name, stages=["Production"])
     if not versions:
         raise HTTPException(status_code=404, detail=f"No hay una versión en 'Production' para el modelo '{model_name}'")
-    
+
     model_version = versions[0].version
     model_uri = f"models:/{model_name}/{model_version}"
-    run_id = versions[0].run_id  #  Obtener el `run_id` del experimento original
+    run_id = versions[0].run_id
 
-    # ** Cargar el modelo desde MLflow**
+    # Cargar el modelo desde MLflow
     try:
         model = mlflow.pyfunc.load_model(model_uri)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al cargar el modelo: {str(e)}")
-    
-    # ** Descargar el LabelEncoder desde el experimento (no el modelo)**
-    label_encoder = None
-    try:
-        artifact_uri = f"runs:/{run_id}/artifacts/label_encoder.pkl"
-        label_encoder_path = mlflow.artifacts.load_artifact(artifact_uri)
-        with open(label_encoder_path, "rb") as f:
-            label_encoder = pickle.load(f)
-    except Exception:
-        print("No se encontró el LabelEncoder, la predicción se devolverá en formato numérico.")
 
-    # ** Convertir input en DataFrame**
+    # Descargar codificadores (label_encoders.pkl)
+    try:
+        encoders_path = mlflow.artifacts.load_artifact(f"runs:/{run_id}/artifacts/label_encoders.pkl")
+        with open(encoders_path, "rb") as f:
+            label_encoders = pickle.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al cargar los codificadores: {str(e)}")
+
+    # Convertir entrada en DataFrame
     input_df = pd.DataFrame([input_data.dict()])
-    
-    # ** Realizar predicción**
+
+    # Aplicar codificación One-Hot con las columnas del entrenamiento
+    for col, encoder in label_encoders.items():
+        encoded = encoder.transform(input_df[[col]])
+        ohe_df = pd.DataFrame(encoded.toarray(), columns=encoder.get_feature_names_out([col]))
+        input_df = pd.concat([input_df.drop(columns=[col]), ohe_df], axis=1)
+
+    # Ajustar columnas faltantes (por si algún valor no apareció en este input)
+    expected_columns = model.metadata.get_input_schema().input_names()
+    for col in expected_columns:
+        if col not in input_df:
+            input_df[col] = 0
+    input_df = input_df[expected_columns]  # Reordenar
+
+    # Hacer predicción
     prediction = model.predict(input_df)
-    
-    # ** Decodificar el resultado si hay LabelEncoder**
-    if label_encoder:
-        prediction = label_encoder.inverse_transform(prediction)
+
+    # Cargar LabelEncoder del target
+    try:
+        label_encoder_path = mlflow.artifacts.load_artifact(f"runs:/{run_id}/artifacts/label_encoder_y.pkl")
+        with open(label_encoder_path, "rb") as f:
+            label_encoder_y = pickle.load(f)
+        prediction = label_encoder_y.inverse_transform(prediction)
+    except Exception:
+        pass  # Devolver como entero si no hay encoder
 
     return {
         "model_used": model_name,

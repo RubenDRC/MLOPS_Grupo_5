@@ -2,10 +2,18 @@ import mysql.connector
 import pandas as pd
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime
+from airflow.utils.dates import days_ago
 from airflow.exceptions import AirflowException
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
-# Definición de la configuración de la base de datos
+
+
+default_args = {
+    'start_date': days_ago(1),
+    'retries': 1
+}
+
+# Configuración de la base de datos
 DB_CONFIG = {
     "host": "10.43.101.195",
     "user": "admin",
@@ -14,148 +22,87 @@ DB_CONFIG = {
     "port": 3308
 }
 
-# Función de preprocesamiento de datos
+# Función de preprocesamiento
 def preprocesar_datos():
     try:
-        # Conectar a MySQL
+        # Conexión a MySQL
         conn = mysql.connector.connect(**DB_CONFIG)
         cursor = conn.cursor()
 
-        # Extraer los datos de la tabla original
+        # Extraer datos
         cursor.execute("SELECT * FROM covertype")
         df = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
 
-        # Preprocesamiento: eliminar valores nulos
+        # Eliminar valores nulos
         df.dropna(inplace=True)
 
-        # Eliminar la tabla si ya existe
+
+        # Eliminar tabla si existe
         cursor.execute("DROP TABLE IF EXISTS covertype_clean")
 
-        # Crear la tabla limpia
+        # Crear nueva tabla limpia (sin variables codificadas)
         cursor.execute('''
             CREATE TABLE covertype_clean (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                elevation INT,
-                aspect INT,
-                slope INT,
-                horizontal_distance_to_hydrology INT,
-                vertical_distance_to_hydrology INT,
-                horizontal_distance_to_roadways INT,
-                hillshade_9am INT,
-                hillshade_noon INT,
-                hillshade_3pm INT,
-                horizontal_distance_to_fire_points INT,
-                horizontal_distance_to_wildfire_ignition_points INT,
-                wilderness_area_1 INT,
-                wilderness_area_2 INT,
-                wilderness_area_3 INT,
-                wilderness_area_4 INT,
-                soil_type_1 INT,
-                soil_type_2 INT,
-                soil_type_3 INT,
-                soil_type_4 INT,
-                soil_type_5 INT,
-                soil_type_6 INT,
-                soil_type_7 INT,
-                soil_type_8 INT,
-                soil_type_9 INT,
-                soil_type_10 INT,
-                soil_type_11 INT,
-                soil_type_12 INT,
-                soil_type_13 INT,
-                soil_type_14 INT,
-                soil_type_15 INT,
-                soil_type_16 INT,
-                soil_type_17 INT,
-                soil_type_18 INT,
-                soil_type_19 INT,
-                soil_type_20 INT,
-                soil_type_21 INT,
-                soil_type_22 INT,
-                soil_type_23 INT,
-                soil_type_24 INT,
-                soil_type_25 INT,
-                soil_type_26 INT,
-                soil_type_27 INT,
-                soil_type_28 INT,
-                soil_type_29 INT,
-                soil_type_30 INT,
-                soil_type_31 INT,
-                soil_type_32 INT,
-                soil_type_33 INT,
-                soil_type_34 INT,
-                soil_type_35 INT,
-                soil_type_36 INT,
-                soil_type_37 INT,
-                soil_type_38 INT,
-                soil_type_39 INT,
-                soil_type_40 INT,
-                cover_type INT
+                Elevation INT,
+                Aspect INT,
+                Slope INT,
+                Horizontal_Distance_To_Hydrology INT,
+                Vertical_Distance_To_Hydrology INT,
+                Horizontal_Distance_To_Roadways INT,
+                Hillshade_9am INT,
+                Hillshade_Noon INT,
+                Hillshade_3pm INT,
+                Horizontal_Distance_To_Fire_Points INT,
+                Wilderness_Area VARCHAR(50),
+                Soil_Type VARCHAR(50),
+                Cover_Type INT
             );
         ''')
 
-        # Seleccionar solo las columnas necesarias
-               # Este paso se ajusta según las columnas que realmente tengas en tu DataFrame
-        df = df[['elevation', 'aspect', 'slope', 'horizontal_distance_to_hydrology', 
-                 'vertical_distance_to_hydrology', 'horizontal_distance_to_roadways', 
-                 'hillshade_9am', 'hillshade_noon', 'hillshade_3pm', 
-                 'horizontal_distance_to_fire_points', 'horizontal_distance_to_wildfire_ignition_points', 
-                 'wilderness_area_1', 'wilderness_area_2', 'wilderness_area_3', 'wilderness_area_4', 
-                 'soil_type_1', 'soil_type_2', 'soil_type_3', 'soil_type_4', 'soil_type_5', 'soil_type_6',
-                 'soil_type_7', 'soil_type_8', 'soil_type_9', 'soil_type_10', 'soil_type_11', 'soil_type_12',
-                 'soil_type_13', 'soil_type_14', 'soil_type_15', 'soil_type_16', 'soil_type_17', 'soil_type_18',
-                 'soil_type_19', 'soil_type_20', 'soil_type_21', 'soil_type_22', 'soil_type_23', 'soil_type_24',
-                 'soil_type_25', 'soil_type_26', 'soil_type_27', 'soil_type_28', 'soil_type_29', 'soil_type_30',
-                 'soil_type_31', 'soil_type_32', 'soil_type_33', 'soil_type_34', 'soil_type_35', 'soil_type_36',
-                 'soil_type_37', 'soil_type_38', 'soil_type_39', 'soil_type_40', 'cover_type']]
-        
-        # Convertir a tuplas
-        data = [tuple(row) for row in df.to_numpy()]
+        # Seleccionar columnas que deseas mantener
+        columnas = [
+            'Elevation', 'Aspect', 'Slope', 'Horizontal_Distance_To_Hydrology',
+            'Vertical_Distance_To_Hydrology', 'Horizontal_Distance_To_Roadways',
+            'Hillshade_9am', 'Hillshade_Noon', 'Hillshade_3pm',
+            'Horizontal_Distance_To_Fire_Points', 'Wilderness_Area',
+            'Soil_Type', 'Cover_Type'
+        ]
+        df = df[columnas]
 
-        # Insertar los datos limpios en la nueva tabla
-        query = """
+        # Convertir a lista de tuplas
+        data = list(map(tuple, df.values))
+
+        # Insertar en la tabla nueva
+        insert_query = f"""
             INSERT INTO covertype_clean (
-                elevation, aspect, slope, horizontal_distance_to_hydrology, vertical_distance_to_hydrology,
-                horizontal_distance_to_roadways, hillshade_9am, hillshade_noon, hillshade_3pm,
-                horizontal_distance_to_fire_points, horizontal_distance_to_wildfire_ignition_points, 
-                wilderness_area_1, wilderness_area_2, wilderness_area_3, wilderness_area_4,
-                soil_type_1, soil_type_2, soil_type_3, soil_type_4, soil_type_5, soil_type_6, soil_type_7,
-                soil_type_8, soil_type_9, soil_type_10, soil_type_11, soil_type_12, soil_type_13, soil_type_14,
-                soil_type_15, soil_type_16, soil_type_17, soil_type_18, soil_type_19, soil_type_20, soil_type_21,
-                soil_type_22, soil_type_23, soil_type_24, soil_type_25, soil_type_26, soil_type_27, soil_type_28,
-                soil_type_29, soil_type_30, soil_type_31, soil_type_32, soil_type_33, soil_type_34, soil_type_35,
-                soil_type_36, soil_type_37, soil_type_38, soil_type_39, soil_type_40, cover_type
+                {', '.join(columnas)}
+            ) VALUES (
+                {', '.join(['%s'] * len(columnas))}
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
         """
-        cursor.executemany(query, data)
-
-
-        # Confirmar cambios
+        cursor.executemany(insert_query, data)
         conn.commit()
-        print(f"Datos preprocesados exitosamente. Registros insertados: {cursor.rowcount}")
 
-        # Cerrar conexiones
+        print(f"Datos preprocesados e insertados correctamente. Registros: {cursor.rowcount}")
+
+        # Cerrar conexión
         cursor.close()
         conn.close()
 
-    except mysql.connector.Error as err:
-        print(f"Error al conectar a MySQL: {err}")
-        raise AirflowException(f"Error al conectar a MySQL: {err}")
+    except Exception as e:
+        raise AirflowException(f"Error en preprocesamiento: {e}")
 
-# Definición del DAG
+# DAG
 with DAG(
-    dag_id='mysql_penguins_preprocesamiento_dag',
-    start_date=datetime(2025, 3, 28),
-    schedule_interval='@daily',  # Esto significa que el DAG se ejecutará todos los días
+    dag_id='Preprocess_Data',
+    default_args=default_args,
+    schedule_interval=None,
     catchup=False
 ) as dag:
 
-    # Definición de la tarea que ejecuta la función de preprocesamiento
     preprocesar_datos_task = PythonOperator(
         task_id='preprocesar_datos',
-        python_callable=preprocesar_datos,
-        dag=dag
+        python_callable=preprocesar_datos
     )
 
     trigger_train_model = TriggerDagRunOperator(
@@ -164,4 +111,5 @@ with DAG(
         wait_for_completion=False
     )
 
-preprocesar_datos_task >> trigger_train_model
+    preprocesar_datos_task >> trigger_train_model
+

@@ -1,4 +1,4 @@
-version: '3.8'
+# docker-compose.yaml
 x-airflow-common:
   &airflow-common
   build:
@@ -6,9 +6,9 @@ x-airflow-common:
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: mysql+mysqlconnector://airflow:airflow@mysql_airflow/airflow
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN: mysql+mysqlconnector://airflow:airflow@mysql_airflow/airflow
-    AIRFLOW__CELERY__RESULT_BACKEND: db+mysql://airflow:airflow@mysql_airflow/airflow
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: mysql+mysqlconnector://admin:admingrupo5@mysql_airflow/airflow
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: mysql+mysqlconnector://admin:admingrupo5@mysql_airflow/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+mysql://admin:admingrupo5@mysql_airflow/airflow
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__WEBSERVER__SECRET_KEY: 'supersecreto123'
@@ -22,9 +22,11 @@ x-airflow-common:
     AWS_ACCESS_KEY_ID: admin
     AWS_SECRET_ACCESS_KEY: supersecret
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
-    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
-    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+    - shared_models:/data/models
+
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -33,7 +35,6 @@ x-airflow-common:
     mysql_airflow:
       condition: service_healthy
 
-      
 services:
 
   redis:
@@ -52,9 +53,7 @@ services:
     <<: *airflow-common
     command: webserver
     ports:
-      - "8080:8080"
-    volumes:
-      - shared_models:/data/models  #  Asegurar que el volumen está montado correctamente
+      - "8080:8080"      
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
@@ -120,7 +119,6 @@ services:
   airflow-init:
     <<: *airflow-common
     entrypoint: /bin/bash
-    # yamllint disable rule:line-length
     command:
       - -c
       - |
@@ -132,58 +130,12 @@ services:
         min_airflow_version=2.2.0
         min_airflow_version_comparable=$$(ver $${min_airflow_version})
         if (( airflow_version_comparable < min_airflow_version_comparable )); then
-          echo
           echo -e "\033[1;31mERROR!!!: Too old Airflow version $${airflow_version}!\e[0m"
-          echo "The minimum Airflow version supported: $${min_airflow_version}. Only use this or higher!"
-          echo
           exit 1
-        fi
-        if [[ -z "${AIRFLOW_UID}" ]]; then
-          echo
-          echo -e "\033[1;33mWARNING!!!: AIRFLOW_UID not set!\e[0m"
-          echo "If you are on Linux, you SHOULD follow the instructions below to set "
-          echo "AIRFLOW_UID environment variable, otherwise files will be owned by root."
-          echo "For other operating systems you can get rid of the warning with manually created .env file:"
-          echo "    See: https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#setting-the-right-airflow-user"
-          echo
-        fi
-        one_meg=1048576
-        mem_available=$$(($$(getconf _PHYS_PAGES) * $$(getconf PAGE_SIZE) / one_meg))
-        cpus_available=$$(grep -cE 'cpu[0-9]+' /proc/stat)
-        disk_available=$$(df / | tail -1 | awk '{print $$4}')
-        warning_resources="false"
-        if (( mem_available < 4000 )) ; then
-          echo
-          echo -e "\033[1;33mWARNING!!!: Not enough memory available for Docker.\e[0m"
-          echo "At least 4GB of memory required. You have $$(numfmt --to iec $$((mem_available * one_meg)))"
-          echo
-          warning_resources="true"
-        fi
-        if (( cpus_available < 2 )); then
-          echo
-          echo -e "\033[1;33mWARNING!!!: Not enough CPUS available for Docker.\e[0m"
-          echo "At least 2 CPUs recommended. You have $${cpus_available}"
-          echo
-          warning_resources="true"
-        fi
-        if (( disk_available < one_meg * 10 )); then
-          echo
-          echo -e "\033[1;33mWARNING!!!: Not enough Disk space available for Docker.\e[0m"
-          echo "At least 10 GBs recommended. You have $$(numfmt --to iec $$((disk_available * 1024 )))"
-          echo
-          warning_resources="true"
-        fi
-        if [[ $${warning_resources} == "true" ]]; then
-          echo
-          echo -e "\033[1;33mWARNING!!!: You have not enough resources to run Airflow (see above)!\e[0m"
-          echo "Please follow the instructions to increase amount of resources available:"
-          echo "   https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#before-you-begin"
-          echo
         fi
         mkdir -p /sources/logs /sources/dags /sources/plugins
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
         exec /entrypoint airflow version
-    # yamllint enable rule:line-length
     environment:
       <<: *airflow-common-env
       _AIRFLOW_DB_UPGRADE: 'true'
@@ -202,14 +154,11 @@ services:
     environment:
       <<: *airflow-common-env
       CONNECTION_CHECK_MAX_COUNT: "0"
-    # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
     command:
       - bash
       - -c
       - airflow
-      
-      
-      
+
   # ---------------- Minio para MLflow ----------------
   minio:
     container_name: minio
@@ -255,7 +204,6 @@ services:
       - ./mysql-data:/var/lib/mysql
     restart: unless-stopped
 
-  
   # ---------------- MySQL para Airflow ----------------
   mysql_airflow:
     image: mysql:8
@@ -269,9 +217,9 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./mysql-airflow:/var/lib/mysql      
+      - ./mysql-airflow:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysql_airflowadmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       retries: 5
       start_period: 5s
@@ -291,9 +239,12 @@ services:
       - MLFLOW_S3_ENDPOINT_URL=http://10.43.101.195:9000
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=supersecret
+    volumes:
+      - shared_models:/data/models
 
 volumes:
   mysql-mlflow:
   mysql-data:
   mysql-airflow:
+  shared_models:
 
