@@ -1,21 +1,30 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
+import mlflow
 import mlflow.pyfunc
+import mlflow.tracking
+from mlflow.tracking import MlflowClient
 import pandas as pd
 import os
 import pickle
+import boto3
+import tempfile
 
-# Configurar MLflow Tracking Server
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://10.43.101.195:5000")
-mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+# Configurar MLflow y acceso a MinIO
+os.environ["MLFLOW_TRACKING_URI"] = "http://10.43.101.195:5000"
+os.environ["MLFLOW_S3_ENDPOINT_URL"] = "http://10.43.101.195:9000"
+os.environ["AWS_ACCESS_KEY_ID"] = "admin"
+os.environ["AWS_SECRET_ACCESS_KEY"] = "supersecret"
+mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
 
+# FastAPI app
 app = FastAPI(
     title="MLflow Model API",
-    description="API que permite hacer inferencias con modelos almacenados en MLflow",
+    description="API para predicciones usando modelos de MLflow",
     version="1.0"
 )
 
-# Modelo de entrada adaptado al dataset Covertype
+# Input schema
 class PredictionInput(BaseModel):
     Elevation: int
     Aspect: int
@@ -30,14 +39,35 @@ class PredictionInput(BaseModel):
     Wilderness_Area: str
     Soil_Type: str
 
+# Función robusta para descargar artefactos
+def descargar_artefacto(run_id: str, filename: str):
+    from mlflow.artifacts import download_artifacts
+    try:
+        uri = f"runs:/{run_id}/artifacts/{filename}"
+        print(f"[MLflow] Descargando {filename} desde: {uri}")
+        return download_artifacts(uri)
+    except Exception as e:
+        print(f"[MLflow] Falló la descarga: {e}")
+        print(f"[Boto3] Intentando descargar desde MinIO...")
+        key = f"artifacts/1/{run_id}/artifacts/{filename}"  # experiment_id = 1
+        s3 = boto3.client(
+            "s3",
+            endpoint_url="http://10.43.101.195:9000",
+            aws_access_key_id="admin",
+            aws_secret_access_key="supersecret"
+        )
+        temp_path = tempfile.NamedTemporaryFile(delete=False).name
+        s3.download_file("mlflows3", key, temp_path)
+        print(f"[Boto3] Descargado exitosamente en: {temp_path}")
+        return temp_path
+
 @app.get("/")
 def root():
-    return {"message": "¡Bienvenido a la API de inferencia con MLflow V2!", "docs": "Visita /docs para la documentación."}
+    return {"message": "¡Bienvenido a la API de MLflow!", "docs": "/docs"}
 
 @app.get("/models")
 def list_models():
-    """Lista los modelos registrados en MLflow y sus versiones en 'Production'."""
-    client = mlflow.tracking.MlflowClient()
+    client = MlflowClient()
     models = []
     for m in client.search_registered_models():
         for version in m.latest_versions:
@@ -50,61 +80,63 @@ def list_models():
 
 @app.post("/predict")
 def predict(input_data: PredictionInput, model_name: str):
-    """Realiza una predicción usando la versión en 'Production' del modelo en MLflow."""
-    client = mlflow.tracking.MlflowClient()
-    versions = client.get_latest_versions(model_name, stages=["Production"])
-    if not versions:
-        raise HTTPException(status_code=404, detail=f"No hay una versión en 'Production' para el modelo '{model_name}'")
-
-    model_version = versions[0].version
-    model_uri = f"models:/{model_name}/{model_version}"
-    run_id = versions[0].run_id
-
-    # Cargar el modelo desde MLflow
     try:
+        client = MlflowClient()
+        versions = client.get_latest_versions(model_name, stages=["Production"])
+        if not versions:
+            raise HTTPException(status_code=404, detail=f"No hay versión 'Production' del modelo '{model_name}'")
+
+        model_version = versions[0].version
+        run_id = versions[0].run_id
+        model_uri = f"models:/{model_name}/{model_version}"
+
+
         model = mlflow.pyfunc.load_model(model_uri)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al cargar el modelo: {str(e)}")
 
-    # Descargar codificadores (label_encoders.pkl)
-    try:
-        encoders_path = mlflow.artifacts.load_artifact(f"runs:/{run_id}/artifacts/label_encoders.pkl")
+        # Descargar y cargar los LabelEncoders
+        encoders_path = descargar_artefacto(run_id, "label_encoders.pkl")
         with open(encoders_path, "rb") as f:
             label_encoders = pickle.load(f)
+
+        # Crear el DataFrame de entrada
+        input_df = pd.DataFrame([input_data.dict()])
+
+        # Aplicar LabelEncoder a las columnas categóricas
+        for col, encoder in label_encoders.items():
+            input_df[col] = encoder.transform(input_df[col])
+
+        # Verificar las columnas esperadas por el modelo
+        schema = model.metadata.get_input_schema()
+        if schema is None:
+            expected_columns = input_df.columns.tolist()
+        else:
+            expected_columns = schema.input_names()
+
+        for col in expected_columns:
+            if col not in input_df:
+                input_df[col] = 0  # Completar con ceros si falta alguna columna
+        input_df = input_df[expected_columns]  # Reordenar columnas
+
+        # Realizar predicción
+        prediction = model.predict(input_df)
+
+        # Intentar decodificar el target si hay un LabelEncoder para Y
+        try:
+            label_encoder_path = descargar_artefacto(run_id, "label_encoder_y.pkl")
+            with open(label_encoder_path, "rb") as f:
+                label_encoder_y = pickle.load(f)
+            prediction = label_encoder_y.inverse_transform(prediction)
+        except Exception as e:
+            print(f"[WARNING] No se pudo decodificar el target: {e}")
+
+        return {
+            "model_used": model_name,
+            "version": model_version,
+            "prediction": prediction.tolist()
+        }
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al cargar los codificadores: {str(e)}")
+        print(f"[ERROR] Fallo en /predict: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-    # Convertir entrada en DataFrame
-    input_df = pd.DataFrame([input_data.dict()])
-
-    # Aplicar codificación One-Hot con las columnas del entrenamiento
-    for col, encoder in label_encoders.items():
-        encoded = encoder.transform(input_df[[col]])
-        ohe_df = pd.DataFrame(encoded.toarray(), columns=encoder.get_feature_names_out([col]))
-        input_df = pd.concat([input_df.drop(columns=[col]), ohe_df], axis=1)
-
-    # Ajustar columnas faltantes (por si algún valor no apareció en este input)
-    expected_columns = model.metadata.get_input_schema().input_names()
-    for col in expected_columns:
-        if col not in input_df:
-            input_df[col] = 0
-    input_df = input_df[expected_columns]  # Reordenar
-
-    # Hacer predicción
-    prediction = model.predict(input_df)
-
-    # Cargar LabelEncoder del target
-    try:
-        label_encoder_path = mlflow.artifacts.load_artifact(f"runs:/{run_id}/artifacts/label_encoder_y.pkl")
-        with open(label_encoder_path, "rb") as f:
-            label_encoder_y = pickle.load(f)
-        prediction = label_encoder_y.inverse_transform(prediction)
-    except Exception:
-        pass  # Devolver como entero si no hay encoder
-
-    return {
-        "model_used": model_name,
-        "version": model_version,
-        "prediction": prediction.tolist()
-    }
 
