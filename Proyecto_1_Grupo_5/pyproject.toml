@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlops_tfx"
+version = "0.1.0"
+description = "Entorno con Docker, TFX y uv"
+dependencies = [
+    "jupyterlab",
+    "tensorflow",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "scikit-learn",
+    "tfx",
+]
