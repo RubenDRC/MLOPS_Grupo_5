@@ -1,55 +1,114 @@
-# Proyecto MLOps con Docker
+Proyecto MLOps con Docker Compose
+Descripción General
+Este proyecto implementa un pipeline completo de MLOps usando contenedores de Docker, donde cada servicio cumple un rol independiente y se comunican a través de redes de Docker. El entorno incluye:
 
-## Descripción
-Este proyecto implementa una arquitectura MLOps basada en cinco instancias independientes:
+Airflow
 
-1. **FastAPI** - Servicio de inferencia de modelos almacenados en MLflow.
-2. **JupyterLab** - Entorno de experimentación y entrenamiento de modelos.
-3. **MinIO** - Almacenamiento de artefactos en un bucket S3.
-4. **MySQL (x2)** - Base de datos para MLflow y otra para almacenar datos.
-5. **MLflow Server** - Servidor de tracking para registrar experimentos y modelos.
+Orquestador de flujos de trabajo (DAGs) para ingesta de datos, entrenamiento y registro de modelos.
 
-Cada servicio es desplegado de manera independiente y se comunican a través de la red pública.
+MySQL (x3)
+
+Una instancia para la metadata de Airflow.
+
+Otra para almacenar datos crudos/procesados (por ejemplo, la tabla covertype).
+
+Una tercera para el tracking de MLflow (almacena experimentos, runs, métricas).
+
+MinIO
+
+Almacenamiento de artefactos estilo S3, donde MLflow guarda modelos y archivos (label encoders, etc.).
+
+MLflow Server
+
+Servidor de tracking para registrar experimentos, métricas y versiones de modelo.
+
+Configurado para usar MySQL como “backend store” y MinIO como “artifact store”.
+
+Expuesto típicamente en un puerto (por ejemplo 5000).
+
+FastAPI
+
+Servicio de inferencia que carga el mejor modelo (o el “Production”) desde MLflow y expone un endpoint REST /predict.
+
+(BONO) Streamlit
+
+Interfaz gráfica opcional para que el usuario final ingrese datos y obtenga inferencias de forma amigable (puerto 8503).
+
+Gracias a esta arquitectura, se cubre todo el ciclo: recolección y procesamiento de datos (Airflow) → entrenamiento y registro en MLflow → almacenamiento de artefactos (MinIO) → base de datos de experimentos (MySQL/MLflow) → servicio de inferencia (FastAPI) → interfaz final (Streamlit, opcional).
+
+
+
+# Proyecto 2 MLOps
+
+## Descripción General
+Este proyecto implementa un pipeline completo de MLOps usando contenedores de Docker, donde cada servicio cumple un rol independiente y se comunican a través de redes de Docker. El entorno incluye:
+
+1. **Airflow** - Orquestador de flujos de trabajo (DAGs) para ingesta de datos, entrenamiento y registro de modelos.
+2. **MySQL (x3)** - Una instancia para la metadata de Airflow. Otra para almacenar datos/procesados (por ejemplo, la tabla covertype). Una tercera para el tracking de MLflow (almacena experimentos, runs, métricas).
+3. **MinIO** - Almacenamiento de artefactos estilo S3, donde MLflow guarda modelos y archivos (label encoders, etc.).
+4. **MLflow Server** - Servidor de tracking para registrar experimentos, métricas y versiones de modelo. Configurado para usar MySQL como “backend store” y MinIO como “artifact store”. 
+5. **MLflow Server** - Servicio de inferencia que carga el modelo desde MLflow y expone un endpoint REST /predict.
+6. **streamlit** - Interfaz gráfica para que el usuario final ingrese datos y obtenga inferencias (puerto 8503).
+
+Con esta arquitectur se cubre todo el ciclo: recolección y procesamiento de datos (Airflow) → entrenamiento y registro en MLflow → almacenamiento de artefactos (MinIO) → base de datos de experimentos (MySQL/MLflow) → servicio de inferencia (FastAPI) → interfaz final (Streamlit).
 
 ## Estructura del Proyecto
 
 ```
-./MLOps_Project
-├── fastapi/               # Código y Dockerfile para FastAPI
-├── jupyterlab/            # Código y Dockerfile para JupyterLab
-├── mysql/                 # Configuración para instancias de MySQL
-├── minio/                 # Configuración de MinIO
-├── mlflow_server/         # Configuración del servicio MLflow
-├── docker-compose-minio.yml  # Docker Compose para MinIO
-├── docker-compose-mysql.yml  # Docker Compose para MySQL (2 instancias)p
-├── mlflow_serv.service    # Servicio de MLflow como systemd
-└── README.md              # Documentación del proyecto
+MLOps_Project/
+├── airflow/                # Carpeta con configuración y DAGs de Airflow
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── dags/
+│       ├── Config_MLFlow.py
+│       ├── Drop_And_Create_Table.py
+│       ├── Load_Data.py
+│       ├── Preprocess_Data.py
+│       ├── Preprocess_Data.py
+│       └── Train_Data.py
+│        
+├── fastapi/                # Carpeta con Dockerfile y main.py de FastAPI
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── main.py
+├── streamlit/ (opcional)   # Carpeta para la app Streamlit de interfaz
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app.py
+├── docker-compose.yaml     # Orquesta y levanta todos los servicios
+├── mlflo_serv.service      # Servicio systemd para MLflow 
+├── .env                    # Variables de entorno 
+└── README.md   
 ```
 
 ## Servicios Implementados
 
-### 1. FastAPI (Inferencia de modelos)
-- Construido con **FastAPI**.
-- Se conecta a **MLflow** para cargar modelos en producción.
-- Expone un endpoint REST para realizar predicciones.
+### 1. Airflow
+- **Orquestación** de tareas a través de DAGs.
+- Descarga datos de una API externa, los inserta en MySQL, los limpia y finalmente desencadena el entrenamiento del modelo.
+- Guarda logs y metadatos en la base MySQL correspondiente a “airflow”.
 
-### 2. JupyterLab (Entrenamiento y Experimentación)
-- Se ejecuta en un contenedor separado con su propio Dockerfile.
-- Se conecta a **MLflow** y **MySQL** para almacenar experimentos y datos.
-- Ejecuta scripts de entrenamiento y preprocesamiento de datos.
+### 2. MySQL (x3 instancias)
+- **mysql_airflow:** Base de datos interna de Airflow (tablas de tareas, DAGs, usuarios, etc.).
+- **mysql_data:** Contiene tablas de datos (por ejemplo, covertype) donde se almacenan las muestras traídas por Airflow.
+- **mysql_mlflow:** Almacena la información de experimentos, parámetros, métricas y versiones de modelo de MLflow.
 
-### 3. MinIO (Almacenamiento de artefactos)
-- Emula un servicio de almacenamiento **S3**.
-- Se usa para almacenar modelos y artefactos generados por MLflow.
+### 3. MinIO 
+- Servicio tipo S3 para **almacenar artefactos** de MLflow
 
-### 4. MySQL (Instancias separadas)
-- **MySQL - MLflow**: Base de datos para la gestión de experimentos y modelos.
-- **MySQL - Datos**: Base de datos para almacenar datos procesados desde JupyterLab.
+### 4. MLflow Server (Tracking de Modelos)
+- Servidor de tracking que registra: Experimentos (nombre, descripción). Runs (métricas, parámetros). Versiones de modelo (subidas a un registry). 
+- Apunta a MySQL (mysql_mlflow) como “backend store” y a MinIO como “artifact store”.
 
-### 5. MLflow Server (Tracking de Modelos)
-- Se ejecuta como un servicio independiente con **systemd**.
-- Registra experimentos y almacena modelos en MinIO.
-- Se conecta a la base de datos MySQL dedicada a MLflow.
+### 5. FastAPI
+- Servicio **REST** para exponer el **modelo entrenado** en MLflow.
+- Carga la versión de modelo que esté en stage “Production”.
+- Responde a endpoints como /predict recibiendo un JSON con datos de entrada.
+
+### 6. Streamlit
+- Interfaz gráfica para que el usuario ingrese valores y obtenga la predicción del modelo.
+- Se comunica con FastAPI (un requests.post a /predict).
+- Expuesto en el puerto 8503.
 
 ## Pasos para la Ejecución
 
@@ -100,13 +159,31 @@ docker ps
 ### 1. Realizar una Predicción
 ```
 {
-    "island": "Biscoe",
-    "culmen_length_mm": 50.0,
-    "culmen_depth_mm": 18.5,
-    "flipper_length_mm": 200.0,
-    "body_mass_g": 4000.0,
-    "sex": "MALE"
-  }
+  "Elevation": 2596,
+
+  "Aspect": 51,
+
+  "Slope": 3,
+
+  "Horizontal_Distance_To_Hydrology": 258,
+
+  "Vertical_Distance_To_Hydrology": 0,
+
+  "Horizontal_Distance_To_Roadways": 510,
+
+  "Hillshade_9am": 221,
+
+  "Hillshade_Noon": 232,
+
+  "Hillshade_3pm": 148,
+
+  "Horizontal_Distance_To_Fire_Points": 6279,
+
+  "Wilderness_Area": "Rawah",
+
+  "Soil_Type": "C7745"
+
+}
 ```
 
 ## Maquina de ejecución
