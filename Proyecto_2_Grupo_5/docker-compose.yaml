@@ -1,10 +1,9 @@
-# docker-compose.yaml
-x-airflow-common:
-  &airflow-common
+version: "3.8"
+
+x-airflow-common: &airflow-common
   build:
     context: ./airflow
-  environment:
-    &airflow-common-env
+  environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: mysql+mysqlconnector://admin:admingrupo5@mysql_airflow/airflow
     AIRFLOW__CORE__SQL_ALCHEMY_CONN: mysql+mysqlconnector://admin:admingrupo5@mysql_airflow/airflow
@@ -16,6 +15,7 @@ x-airflow-common:
     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    # Variables de MLflow/MinIO
     MLFLOW_TRACKING_URI: http://10.43.101.195:5000
     DATABASE_URL: mysql+pymysql://admin:admingrupo5@10.43.101.195:3308/data_db
     MLFLOW_S3_ENDPOINT_URL: http://10.43.101.195:9000
@@ -26,17 +26,17 @@ x-airflow-common:
     - ./airflow/logs:/opt/airflow/logs
     - ./airflow/plugins:/opt/airflow/plugins
     - shared_models:/data/models
-
   user: "${AIRFLOW_UID:-50000}:0"
-  depends_on:
-    &airflow-common-depends-on
+  depends_on: &airflow-common-depends-on
     redis:
       condition: service_healthy
     mysql_airflow:
       condition: service_healthy
 
 services:
-
+  # ------------------------------------------------
+  # REDIS (BROKER Celery)
+  # ------------------------------------------------
   redis:
     image: redis:latest
     expose:
@@ -49,11 +49,14 @@ services:
       start_period: 30s
     restart: always
 
+  # ------------------------------------------------
+  # AIRFLOW WEBSERVER
+  # ------------------------------------------------
   airflow-webserver:
     <<: *airflow-common
     command: webserver
     ports:
-      - "8080:8080"      
+      - "8080:8080"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
@@ -66,6 +69,9 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  # ------------------------------------------------
+  # AIRFLOW SCHEDULER
+  # ------------------------------------------------
   airflow-scheduler:
     <<: *airflow-common
     command: scheduler
@@ -81,6 +87,9 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  # ------------------------------------------------
+  # AIRFLOW WORKER
+  # ------------------------------------------------
   airflow-worker:
     <<: *airflow-common
     command: celery worker
@@ -101,6 +110,9 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  # ------------------------------------------------
+  # AIRFLOW TRIGGERER
+  # ------------------------------------------------
   airflow-triggerer:
     <<: *airflow-common
     command: triggerer
@@ -116,6 +128,9 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  # ------------------------------------------------
+  # AIRFLOW INIT
+  # ------------------------------------------------
   airflow-init:
     <<: *airflow-common
     entrypoint: /bin/bash
@@ -147,6 +162,7 @@ services:
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
 
+  # CLI OPCIONAL
   airflow-cli:
     <<: *airflow-common
     profiles:
@@ -159,7 +175,9 @@ services:
       - -c
       - airflow
 
-  # ---------------- Minio para MLflow ----------------
+  # ------------------------------------------------
+  # MINIO (Artefact Store para MLflow)
+  # ------------------------------------------------
   minio:
     container_name: minio
     image: quay.io/minio/minio:latest
@@ -172,7 +190,9 @@ services:
       - MINIO_ROOT_PASSWORD=supersecret
     restart: unless-stopped
 
-  # ---------------- MySQL para MLflow ----------------
+  # ------------------------------------------------
+  # MySQL para MLflow
+  # ------------------------------------------------
   mysql_mlflow:
     container_name: mysql_mlflow
     image: mysql:8
@@ -188,7 +208,9 @@ services:
       - ./mysql-mlflow:/var/lib/mysql
     restart: unless-stopped
 
-  # ---------------- MySQL para Datos ----------------
+  # ------------------------------------------------
+  # MySQL para DATOS
+  # ------------------------------------------------
   mysql_data:
     container_name: mysql_data
     image: mysql:8
@@ -204,7 +226,9 @@ services:
       - ./mysql-data:/var/lib/mysql
     restart: unless-stopped
 
-  # ---------------- MySQL para Airflow ----------------
+  # ------------------------------------------------
+  # MySQL para AIRFLOW
+  # ------------------------------------------------
   mysql_airflow:
     image: mysql:8
     container_name: mysql_airflow
@@ -225,7 +249,9 @@ services:
       start_period: 5s
     restart: unless-stopped
 
-  # ---------------- FastAPI para inferencia ----------------
+  # ------------------------------------------------
+  # FASTAPI (para Inferencia)
+  # ------------------------------------------------
   fastapi:
     build:
       context: ./fastapi
@@ -242,9 +268,27 @@ services:
     volumes:
       - shared_models:/data/models
 
+  # ------------------------------------------------
+  # STREAMLIT 
+  # ------------------------------------------------
+  streamlit:
+    container_name: streamlit_app
+    build:
+      context: ./streamlit
+      dockerfile: Dockerfile
+    ports:
+      - "8503:8503"  # Exposición local en 8503
+    depends_on:
+      - fastapi
+    environment:
+      # Si deseas usar las mismas credenciales de MLflow/Minio desde Streamlit
+      - MLFLOW_TRACKING_URI=http://10.43.101.195:5000
+      - MLFLOW_S3_ENDPOINT_URL=http://10.43.101.195:9000
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=supersecret
+
 volumes:
   mysql-mlflow:
   mysql-data:
   mysql-airflow:
   shared_models:
-
