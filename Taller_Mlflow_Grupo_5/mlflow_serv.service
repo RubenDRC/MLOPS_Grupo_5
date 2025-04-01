@@ -1,0 +1,20 @@
+[Unit]
+Description=MLflow Tracking Server
+After=network.target mysql_mlflow.service
+
+[Service]
+User=estudiante
+Restart=on-failure
+RestartSec=3
+WorkingDirectory=/home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Taller_Mlflow_Grupo_5/
+Environment=MLFLOW_S3_ENDPOINT_URL=http://10.43.101.195:9000
+Environment=AWS_ACCESS_KEY_ID=admin
+Environment=AWS_SECRET_ACCESS_KEY=supersecret
+
+ExecStart=/usr/bin/python3 -m mlflow server \
+  --backend-store-uri mysql+pymysql://admin:admingrupo5@10.43.101.195:3307/mlflow_db \
+  --default-artifact-root s3://mlflows3/artifacts \
+  --host 0.0.0.0 --port 5000 --serve-artifacts
+
+[Install]
+WantedBy=multi-user.target
