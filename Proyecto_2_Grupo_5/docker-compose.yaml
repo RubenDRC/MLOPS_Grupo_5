@@ -281,7 +281,7 @@ services:
     depends_on:
       - fastapi
     environment:
-      # Si deseas usar las mismas credenciales de MLflow/Minio desde Streamlit
+      # Si se desea usar las mismas credenciales de MLflow/Minio desde Streamlit
       - MLFLOW_TRACKING_URI=http://10.43.101.195:5000
       - MLFLOW_S3_ENDPOINT_URL=http://10.43.101.195:9000
       - AWS_ACCESS_KEY_ID=admin
