@@ -9,7 +9,7 @@ Este proyecto implementa un pipeline completo de MLOps usando contenedores de Do
 3. **MinIO** - Almacenamiento de artefactos estilo S3, donde MLflow guarda modelos y archivos (label encoders, etc.).
 4. **MLflow Server** - Servidor de tracking para registrar experimentos, métricas y versiones de modelo. Configurado para usar MySQL como “backend store” y MinIO como “artifact store”. 
 5. **MLflow Server** - Servicio de inferencia que carga el modelo desde MLflow y expone un endpoint REST /predict.
-6. **streamlit** - Interfaz gráfica para que el usuario final ingrese datos y obtenga inferencias (puerto 8503).
+6. **Streamlit** - Interfaz gráfica para que el usuario final ingrese datos y obtenga inferencias (puerto 8503).
 
 Con esta arquitectur se cubre todo el ciclo: recolección y procesamiento de datos (Airflow) → entrenamiento y registro en MLflow → almacenamiento de artefactos (MinIO) → base de datos de experimentos (MySQL/MLflow) → servicio de inferencia (FastAPI) → interfaz final (Streamlit).
 
@@ -81,71 +81,100 @@ cd MLOps_Project
 
 ### 2. Levantar los servicios en orden
 
-#### **Paso 1: Iniciar MinIO**
+En este proyecto, la mayoría de servicios se definen en el **docker-compose.yaml** (Airflow, MySQL, MinIO, FastAPI y Streamlit). Sin embargo, **MLflow** se levanta de forma externa con un archivo `.service` (no dentro de Docker).
+
+A continuación, se presenta el procedimiento para iniciar el proceso:
+
+
+#### **Paso 1: Levantar los contenedores**:
 ```bash
 docker-compose up -d
 ```
+Esto inicia:
+- Airflow (puerto 8080)
+- MySQL (puertos 3306, 3307, 3308)
+- MinIO (puertos 9000/9001)
+- FastAPI (puerto 8000)
+- Streamlit (puerto 8503).
 
-#### **Paso 2: Iniciar las instancias de MySQL**
-```bash
-docker-compose up -d 
-```
-
-#### **Paso 3: Iniciar MLflow Server**
+#### **Paso 2: Iniciar MLflow Server**
 ```bash
 sudo systemctl start mlflow_serv.service
 ```
-
-#### **Paso 4: Iniciar JupyterLab**
-```bash
-docker build -t jupyterlab ./jupyterlab
-
-docker run -it --name jupyterlab --rm -e TZ=America/Bogota -p 8888:8888 -v $PWD:/work jupyterlab:latest
-```
-
-#### **Paso 5: Iniciar FastAPI**
-```bash
-docker build -t fastapi ./fastapi
-
-docker run -d --name fastapi -p 8000:8000 fastapi
-```
+Se Debería tener MLflow disponible en http://10.43.101.195:5000.
 
 ### 3. Verificar que los contenedores estén corriendo
 ```bash
 docker ps
 ```
 
+#### 4. Puertos y direcciones de acceso
+**Airflow:**
+
+- http://10.43.101.195:8080
+
+**MinIO:**
+
+- Consola: http://10.43.101.195:9001
+
+- Endpoint S3: http://10.43.101.195:9000
+
+**MySQL:**
+
+- Airflow: Puerto 3306
+
+- MLflow: Puerto 3307
+
+- Datos: Puerto 3308
+
+- MLflow (externo): http://10.43.101.195:5000
+
+- FastAPI: http://10.43.101.195:8000 (Swagger en /docs)
+
+- Streamlit: http://10.43.101.195:8503
+
+
 ## Prueba de Inferencia con FastAPI
 
 ### 1. Realizar una Predicción
 ```
+Ejemplo de JSON a enviar a POST /predict
+
 {
   "Elevation": 2596,
-
   "Aspect": 51,
-
   "Slope": 3,
-
   "Horizontal_Distance_To_Hydrology": 258,
-
   "Vertical_Distance_To_Hydrology": 0,
-
   "Horizontal_Distance_To_Roadways": 510,
-
   "Hillshade_9am": 221,
-
   "Hillshade_Noon": 232,
-
   "Hillshade_3pm": 148,
-
   "Horizontal_Distance_To_Fire_Points": 6279,
-
   "Wilderness_Area": "Rawah",
-
   "Soil_Type": "C7745"
+}
 
+En respuesta se obtendra un JSON con la predicción, por ejemplo:
+{
+  "model_used": "RandomForestModel",
+  "version": "1",
+  "prediction": [2]
 }
 ```
+## Uso de Streamlit
+En http://10.43.101.195:8503, se encontrará una interfaz para ingresar valores de Elevation, Slope, etc. y presionar “Predecir”. La app enviará un POST a http://10.43.101.195:8000/predict y mostrará la respuesta directamente en pantalla.
+
+Parámetros de ejemplo:
+- Elevation: 2500
+- Aspect: 45
+- Slope: 10
+- Wilderness_Area: “Rawah”
+- Soil_Type: “C7745”
+- etc...
+
+## Video Tutorial
+Si desea ver una demostración de la implementación y ejecución, **puede consultar el siguiente video:** https://www.youtube.com/watch?v=od4n5W0470s
 
 ## Maquina de ejecución
 
