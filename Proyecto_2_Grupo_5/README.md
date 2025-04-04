@@ -11,7 +11,7 @@ Este proyecto implementa un pipeline completo de MLOps usando contenedores de Do
 5. **MLflow Server** - Servicio de inferencia que carga el modelo desde MLflow y expone un endpoint REST /predict.
 6. **Streamlit** - Interfaz gráfica para que el usuario final ingrese datos y obtenga inferencias (puerto 8503).
 
-Con esta arquitectur se cubre todo el ciclo: recolección y procesamiento de datos (Airflow) → entrenamiento y registro en MLflow → almacenamiento de artefactos (MinIO) → base de datos de experimentos (MySQL/MLflow) → servicio de inferencia (FastAPI) → interfaz final (Streamlit).
+Con esta arquitectura se cubre todo el ciclo: recolección y procesamiento de datos (Airflow) → entrenamiento y registro en MLflow → almacenamiento de artefactos (MinIO) → base de datos de experimentos (MySQL/MLflow) → servicio de inferencia (FastAPI) → interfaz final (Streamlit).
 
 ## Estructura del Proyecto
 
@@ -24,7 +24,6 @@ MLOps_Project/
 │       ├── Config_MLFlow.py
 │       ├── Drop_And_Create_Table.py
 │       ├── Load_Data.py
-│       ├── Preprocess_Data.py
 │       ├── Preprocess_Data.py
 │       └── Train_Data.py
 │        
