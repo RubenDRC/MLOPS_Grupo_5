@@ -31,7 +31,7 @@ MLOps_Project/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── main.py
-├── streamlit/ (opcional)   # Carpeta para la app Streamlit de interfaz
+├── streamlit/              # Carpeta para la app Streamlit de interfaz
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── app.py
