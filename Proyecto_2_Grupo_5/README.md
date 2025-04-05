@@ -173,7 +173,7 @@ Parámetros de ejemplo:
 - etc...
 
 ## Video Tutorial
-Si desea ver una demostración de la implementación y ejecución, **puede consultar el siguiente video:** https://www.youtube.com/watch?v=od4n5W0470s
+Si desea ver una demostración de la **implementación, ejecución y resultados, puede consultar el siguiente video:** https://www.youtube.com/watch?v=od4n5W0470s
 
 ## Maquina de ejecución
 
