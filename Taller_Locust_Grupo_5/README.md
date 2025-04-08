@@ -1,4 +1,4 @@
-# Taller 3 Locust: MLOps - Despliegue y Monitoreo (Grupo 5 - Clase de los Martes)
+# Taller Locust: MLOps - Despliegue y Monitoreo (Grupo 5 - Clase de los Martes)
 
 ## Descripción
 
