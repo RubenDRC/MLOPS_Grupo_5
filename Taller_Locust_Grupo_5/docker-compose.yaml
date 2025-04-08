@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  api:
+    image: jdvalencias10/api_inferencia_locust:v1
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "512M"

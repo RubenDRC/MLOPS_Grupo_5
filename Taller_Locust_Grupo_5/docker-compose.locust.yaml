@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  api:
+    image: jdvalencias10/api_inferencia_locust:v1
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: "256M"
+
+  locust:
+    build:
+      context: .
+      dockerfile: Dockerfile.locust
+    container_name: locust
+    ports:
+      - "8089:8089"
+    depends_on:
+      - api
+    environment:
+      - LOCUST_HOST=http://api:8000
