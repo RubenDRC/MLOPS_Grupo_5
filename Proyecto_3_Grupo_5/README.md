@@ -1,4 +1,4 @@
-# Proyecto 2 MLOps
+# Proyecto 3 MLOps
 
 ## Descripción General
 Este proyecto implementa un pipeline completo de MLOps desplegado sobre **Kubernetes con MicroK8s**, donde cada servicio se ejecuta en un contenedor independiente y se comunica a través de servicios de red internos. El entorno incluye:
