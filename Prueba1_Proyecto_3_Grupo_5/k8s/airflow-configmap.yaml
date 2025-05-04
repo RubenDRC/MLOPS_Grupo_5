@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-config
+data:
+  AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://admin:admingrupo5@postgres-airflow:5432/airflow
+  AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://admin:admingrupo5@postgres-airflow:5432/airflow
+  AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+  AIRFLOW__CORE__FERNET_KEY: superfernetkey1234567890
+  AIRFLOW__WEBSERVER__SECRET_KEY: airflowsecretkey
+  AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+
