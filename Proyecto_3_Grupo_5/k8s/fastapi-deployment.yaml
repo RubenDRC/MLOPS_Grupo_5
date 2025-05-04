@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi
+  template:
+    metadata:
+      labels:
+        app: fastapi
+    spec:
+      containers:
+        - name: fastapi
+          image: python:3.10-slim
+          workingDir: /app
+          command: ["bash", "-c"]
+          args:
+            - |
+              pip install --no-cache-dir -r requirements.txt && \
+              uvicorn main:app --host 0.0.0.0 --port 8000
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: http://mlflow:5000
+            - name: DATABASE_URL
+              value: postgresql://admin:admingrupo5@postgres-mlflow:5432/data_db
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: http://minio:9000
+            - name: AWS_ACCESS_KEY_ID
+              value: admin
+            - name: AWS_SECRET_ACCESS_KEY
+              value: supersecret
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: fastapi-code
+              mountPath: /app
+      volumes:
+        - name: fastapi-code
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/fastapi  # Ajusta a tu ruta 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fastapi
+spec:
+  selector:
+    app: fastapi
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: NodePort
+
