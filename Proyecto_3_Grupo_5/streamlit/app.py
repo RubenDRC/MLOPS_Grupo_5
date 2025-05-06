@@ -1,95 +1,62 @@
-# app.py
-# ---------------------------------------------------------------
-# UI sencilla que consume la API FastAPI (fastapi‑service:8000)
-# y muestra la predicción de re‑ingreso (<30 días) de pacientes
-# diabéticos.  Adaptado a Proyecto 3 – K8s / MinIO / MLflow.
-# ---------------------------------------------------------------
-import os, requests, json
-import pandas as pd
 import streamlit as st
+import requests
+import pandas as pd
 
-# ─────────────── Configuración ────────────────
-API_HOST = os.getenv("FASTAPI_ENDPOINT", "http://fastapi-service:8000")
+st.title("Predicción de Reingreso por Diabetes")
 
-# ──────────────── utilidades ──────────────────
-@st.cache_data(show_spinner=False, ttl=3600)
-def get_models():
-    try:
-        r = requests.get(f"{API_HOST}/models", timeout=3)
-        r.raise_for_status()
-        return pd.DataFrame(r.json())
-    except Exception:
-        return pd.DataFrame()
+st.markdown("Usa un modelo MLflow para predecir si un paciente será reingresado.")
 
-def send_prediction(payload: dict, model: str):
-    r = requests.post(
-        f"{API_HOST}/predict?model_name={model}",
-        json={"data": payload},
-        timeout=10
-    )
-    r.raise_for_status()
-    return r.json()
+with st.form("prediction_form"):
+    model_name = st.text_input("Modelo MLflow", "RandomForestModel")
 
-# ────────────────── UI ─────────────────────────
-st.title("🩺 Readmisión de Pacientes Diabéticos (<30 días)")
-st.markdown(
-    "Esta app consulta el modelo **RandomForest_Diabetes** "
-    "registrado en MLflow (stage *Production*) mediante la API FastAPI."
-)
+    inputs = {
+        "race": st.selectbox("Raza", ["Caucasian", "AfricanAmerican", "Asian", "Hispanic", "Other"]),
+        "gender": st.selectbox("Género", ["Male", "Female"]),
+        "age": st.selectbox("Edad", ["[0-10)", "[10-20)", "[20-30)", "[30-40)", "[40-50)", "[50-60)", "[60-70)", "[70-80)", "[80-90)", "[90-100)"]),
+        "weight": st.text_input("Peso", "no aplica"),
+        "admission_type_id": st.text_input("Tipo de admisión", "3"),
+        "discharge_disposition_id": st.text_input("Tipo de egreso", "1"),
+        "admission_source_id": st.text_input("Fuente de admisión", "1"),
+        "time_in_hospital": st.text_input("Días hospitalizado", "2"),
+        "payer_code": st.text_input("Código de pagador", "BC"),
+        "medical_specialty": st.text_input("Especialidad médica", "Surgery-General"),
+        "num_lab_procedures": st.text_input("Procedimientos lab.", "5"),
+        "num_procedures": st.text_input("Procedimientos", "4"),
+        "num_medications": st.text_input("Medicamentos", "11"),
+        "number_outpatient": st.text_input("Visitas ambulatorias", "0"),
+        "number_emergency": st.text_input("Emergencias", "0"),
+        "number_inpatient": st.text_input("Internaciones", "0"),
+        "diag_1": st.text_input("Diagnóstico 1", "196"),
+        "diag_2": st.text_input("Diagnóstico 2", "199"),
+        "diag_3": st.text_input("Diagnóstico 3", "250"),
+        "number_diagnoses": st.text_input("Diagnósticos", "7"),
+        "max_glu_serum": st.selectbox("Glucosa sérica máx.", ["None", "Norm", ">200", ">300", "no aplica"]),
+        "a1cresult": st.selectbox("Resultado A1C", ["None", "Norm", ">7", ">8", "no aplica"]),
+    }
 
-# ---------- Panel lateral ----------
-with st.sidebar:
-    st.header("ℹ️  Modelo disponible")
-    models_df = get_models()
-    if not models_df.empty:
-        production = models_df[models_df["stage"] == "Production"]
-        model_name = st.selectbox(
-            "Selecciona modelo",
-            production["name"].unique(),
-            index=0 if "RandomForest_Diabetes" in production["name"].values else 0
-        )
-        st.caption(f"Versión Production actual: {production.iloc[0]['version']}")
+    meds = [
+        "metformin", "repaglinide", "nateglinide", "chlorpropamide", "glimepiride",
+        "acetohexamide", "glipizide", "glyburide", "tolbutamide", "pioglitazone",
+        "rosiglitazone", "acarbose", "miglitol", "troglitazone", "tolazamide",
+        "examide", "citoglipton", "insulin", "glyburide_metformin",
+        "glipizide_metformin", "glimepiride_pioglitazone",
+        "metformin_rosiglitazone", "metformin_pioglitazone"
+    ]
+    for med in meds:
+        inputs[med] = st.selectbox(med, ["No", "Steady", "Up", "Down"], key=med)
+
+    inputs["change"] = st.selectbox("¿Cambio?", ["No", "Ch"])
+    inputs["diabetesmed"] = st.selectbox("¿Medicación diabetes?", ["Yes", "No"])
+
+    submitted = st.form_submit_button("Predecir")
+
+if submitted:
+    st.info("Enviando solicitud...")
+    response = requests.post(f"http://10.43.101.195:30190/predict?model_name={model_name}", json=inputs)
+    if response.status_code == 200:
+        result = response.json()
+        st.success(f" Predicción: {result['prediccion'][0]}")
+        st.info(f"Modelo: {result['modelo']} (versión {result['version']})")
     else:
-        st.error("No se pudo obtener la lista de modelos.")
-        st.stop()
+        st.error(f" Error {response.status_code}: {response.text}")
 
-# ---------- Formulario de entrada ----------
-st.header("📋 Formulario (variables principales)")
-
-cols = st.columns(3)
-age          = cols[0].selectbox("Edad", ["[0-10)","[10-20)","[20-30)","[30-40)","[40-50)","[50-60)","[60-70)","[70-80)","[80-90)","[90-100)"])
-gender       = cols[1].selectbox("Género", ["Male","Female","Unknown/Invalid"])
-time_hosp    = cols[2].number_input("Días en hospital", 1, 14, 3)
-
-num_labs     = st.number_input("Número procedimientos de lab", 0, 132, 45)
-num_meds     = st.number_input("Número de medicamentos", 1, 81, 13)
-insulin      = st.selectbox("Insulina", ["No","Up","Down","Steady"])
-change_flag  = st.selectbox("¿Cambio de medicación?", ["No","Ch"])
-diabetes_med = st.selectbox("¿Recibió medicamentos para diabetes?", ["No","Yes"])
-
-submit = st.button("🔮 Predecir")
-
-# ---------- Predicción ----------
-if submit:
-    with st.spinner("Consultando modelo…"):
-        payload = {
-            "age": age,
-            "gender": gender,
-            "time_in_hospital": time_hosp,
-            "num_lab_procedures": num_labs,
-            "num_medications": num_meds,
-            "insulin": insulin,
-            "change_flag": change_flag,
-            "diabetesMed": diabetes_med
-        }
-        try:
-            result = send_prediction(payload, model_name)
-            st.success(f"Predicción: **{result['prediction'][0]}** "
-                       f"(modelo v{result['version']})")
-        except requests.HTTPError as err:
-            st.error(f"API error: {err.response.text}")
-        except Exception as e:
-            st.error(f"Error inesperado: {e}")
-
-st.divider()
-st.caption("Proyecto 3 – MLOps (2025) ·  Grupo 5")
