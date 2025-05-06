@@ -19,15 +19,17 @@ Esta arquitectura cubre el ciclo completo de MLOps: ingestión y orquestación �
 MLOPS_Proyecto3/
 ├── airflow/ # Contiene los DAGs
 │ └── dags/
+│ └── requirements.txt
+│ └── data
+│	└── diabetic_data.csv
 ├── fastapi/ # Servicio de inferencia
 │ └── main.py
+│ └── requirements.txt
 ├── streamlit/ # Interfaz de usuario
 │ └── app.py
+│ └── requirements.txt	
 ├── k8s/ # Manifiestos de Kubernetes
-│ ├── 25 archivos .yaml (uno por componente)
-├── Makefile # Automatiza despliegue y limpieza
-
-
+│ ├── 34 archivos .yaml (uno por componente)
 ---
 
 ## Servicios Implementados
@@ -57,6 +59,9 @@ MLOPS_Proyecto3/
 ### 6. Streamlit
 - Interfaz interactiva que se comunica con FastAPI para mostrar resultados al usuario
 - Expuesta en el puerto 8503
+
+### 7. Observabilidad
+- Se implementaron los servicios de grafana,locust y prometheus para realizar observabilidad de la operación de inferencia
 
 ---
 
@@ -114,6 +119,15 @@ microk8s kubectl apply -f k8s/fastapi-deployment.yaml
 microk8s kubectl apply -f k8s/fastapi-service.yaml
 microk8s kubectl apply -f k8s/streamlit-deployment.yaml
 microk8s kubectl apply -f k8s/streamlit-service.yaml
+```
+
+# Paso 8: Observabilidad
+```bash
+microk8s kubectl apply -f k8s/locust-configmap.yaml
+microk8s kubectl apply -f k8s/prometheus-configmap.yaml
+microk8s kubectl apply -f k8s/fgrafana-deployment.yaml
+microk8s kubectl apply -f k8s/flocust-deployment.yaml
+microk8s kubectl apply -f k8s/prometheus-deployment.yaml
 ```
 
 ### 3. Puertos y Direcciones de Acceso
