@@ -11,4 +11,10 @@ data:
   AIRFLOW__WEBSERVER__SECRET_KEY: airflowsecretkey
   AIRFLOW__CORE__LOAD_EXAMPLES: "False"
   AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+  AIRFLOW__WEBSERVER__BASE_URL: http://airflow-webserver:8080
+  AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
+  AIRFLOW__LOGGING__DAG_PROCESSOR_MANAGER_LOG_LOCATION: /opt/airflow/logs/dag_processor_manager/dag_processor_manager.log
+
+
+
 

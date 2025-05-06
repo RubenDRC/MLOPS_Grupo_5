@@ -15,15 +15,33 @@ spec:
       containers:
         - name: scheduler
           image: apache/airflow:2.7.3-python3.10
-          command: ["airflow", "scheduler"]
+          command: ["bash", "-c"]
+          args:
+            - |
+              pip install --no-cache-dir -r /airflow/requirements.txt && \
+              airflow scheduler
           envFrom:
             - configMapRef:
                 name: airflow-config
           volumeMounts:
             - name: dags
               mountPath: /opt/airflow/dags
+            - name: airflow-folder
+              mountPath: /airflow
+            - name: logs
+              mountPath: /opt/airflow/logs
+            - name: data
+              mountPath: /opt/airflow/data
       volumes:
         - name: dags
           hostPath:
             path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/dags
-
+        - name: airflow-folder
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow
+        - name: logs
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/logs
+        - name: data
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/data

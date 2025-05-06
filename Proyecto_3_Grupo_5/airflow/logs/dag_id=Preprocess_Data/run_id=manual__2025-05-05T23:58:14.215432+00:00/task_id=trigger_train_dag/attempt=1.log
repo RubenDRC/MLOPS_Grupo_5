@@ -1,0 +1,12 @@
+[2025-05-05T23:58:59.958+0000] {taskinstance.py:1159} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: Preprocess_Data.trigger_train_dag manual__2025-05-05T23:58:14.215432+00:00 [queued]>
+[2025-05-05T23:58:59.990+0000] {taskinstance.py:1159} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: Preprocess_Data.trigger_train_dag manual__2025-05-05T23:58:14.215432+00:00 [queued]>
+[2025-05-05T23:58:59.991+0000] {taskinstance.py:1361} INFO - Starting attempt 1 of 2
+[2025-05-05T23:59:00.047+0000] {taskinstance.py:1382} INFO - Executing <Task(TriggerDagRunOperator): trigger_train_dag> on 2025-05-05 23:58:14.215432+00:00
+[2025-05-05T23:59:00.106+0000] {standard_task_runner.py:57} INFO - Started process 709 to run task
+[2025-05-05T23:59:00.186+0000] {standard_task_runner.py:84} INFO - Running: ['airflow', 'tasks', 'run', 'Preprocess_Data', 'trigger_train_dag', 'manual__2025-05-05T23:58:14.215432+00:00', '--job-id', '144', '--raw', '--subdir', 'DAGS_FOLDER/Preprocess_Data.py', '--cfg-path', '/tmp/tmpz3xlc3dl']
+[2025-05-05T23:59:00.204+0000] {standard_task_runner.py:85} INFO - Job 144: Subtask trigger_train_dag
+[2025-05-05T23:59:00.562+0000] {task_command.py:416} INFO - Running <TaskInstance: Preprocess_Data.trigger_train_dag manual__2025-05-05T23:58:14.215432+00:00 [running]> on host airflow-worker-5c47d7d789-mw9hk
+[2025-05-05T23:59:02.032+0000] {taskinstance.py:1662} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='Preprocess_Data' AIRFLOW_CTX_TASK_ID='trigger_train_dag' AIRFLOW_CTX_EXECUTION_DATE='2025-05-05T23:58:14.215432+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2025-05-05T23:58:14.215432+00:00'
+[2025-05-05T23:59:02.576+0000] {taskinstance.py:1400} INFO - Marking task as SUCCESS. dag_id=Preprocess_Data, task_id=trigger_train_dag, execution_date=20250505T235814, start_date=20250505T235859, end_date=20250505T235902
+[2025-05-05T23:59:02.727+0000] {local_task_job_runner.py:228} INFO - Task exited with return code 0
+[2025-05-05T23:59:02.843+0000] {taskinstance.py:2778} INFO - 0 downstream tasks scheduled from follow-on schedule check

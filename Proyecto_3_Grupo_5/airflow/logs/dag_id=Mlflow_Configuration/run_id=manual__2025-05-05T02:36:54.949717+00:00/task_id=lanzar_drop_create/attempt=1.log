@@ -1,0 +1,18 @@
+[2025-05-05T02:46:47.426+0000] {taskinstance.py:1159} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: Mlflow_Configuration.lanzar_drop_create manual__2025-05-05T02:36:54.949717+00:00 [queued]>
+[2025-05-05T02:46:47.458+0000] {taskinstance.py:1159} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: Mlflow_Configuration.lanzar_drop_create manual__2025-05-05T02:36:54.949717+00:00 [queued]>
+[2025-05-05T02:46:47.458+0000] {taskinstance.py:1361} INFO - Starting attempt 1 of 2
+[2025-05-05T02:46:47.521+0000] {taskinstance.py:1382} INFO - Executing <Task(TriggerDagRunOperator): lanzar_drop_create> on 2025-05-05 02:36:54.949717+00:00
+[2025-05-05T02:46:47.581+0000] {standard_task_runner.py:57} INFO - Started process 83 to run task
+[2025-05-05T02:46:47.607+0000] {standard_task_runner.py:84} INFO - Running: ['airflow', 'tasks', 'run', 'Mlflow_Configuration', 'lanzar_drop_create', 'manual__2025-05-05T02:36:54.949717+00:00', '--job-id', '26', '--raw', '--subdir', 'DAGS_FOLDER/Config_MLFlow.py', '--cfg-path', '/tmp/tmpzha_zyj3']
+[2025-05-05T02:46:47.618+0000] {standard_task_runner.py:85} INFO - Job 26: Subtask lanzar_drop_create
+[2025-05-05T02:46:48.423+0000] {task_command.py:416} INFO - Running <TaskInstance: Mlflow_Configuration.lanzar_drop_create manual__2025-05-05T02:36:54.949717+00:00 [running]> on host airflow-worker-79b6d7f9f-dvv8h
+[2025-05-05T02:46:48.634+0000] {taskinstance.py:1662} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='Mlflow_Configuration' AIRFLOW_CTX_TASK_ID='lanzar_drop_create' AIRFLOW_CTX_EXECUTION_DATE='2025-05-05T02:36:54.949717+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2025-05-05T02:36:54.949717+00:00'
+[2025-05-05T02:46:54.130+0000] {warnings.py:109} WARNING - /home/airflow/.local/lib/python3.10/site-packages/airflow/providers/google/cloud/links/dataproc.py:79: AirflowProviderDeprecationWarning: This DataprocLink is deprecated.
+  warnings.warn(
+
+[2025-05-05T02:46:54.134+0000] {warnings.py:109} WARNING - /home/airflow/.local/lib/python3.10/site-packages/airflow/providers/google/cloud/links/dataproc.py:128: AirflowProviderDeprecationWarning: This DataprocListLink is deprecated.
+  warnings.warn("This DataprocListLink is deprecated.", AirflowProviderDeprecationWarning)
+
+[2025-05-05T02:46:58.358+0000] {taskinstance.py:1400} INFO - Marking task as SUCCESS. dag_id=Mlflow_Configuration, task_id=lanzar_drop_create, execution_date=20250505T023654, start_date=20250505T024647, end_date=20250505T024658
+[2025-05-05T02:46:58.456+0000] {local_task_job_runner.py:228} INFO - Task exited with return code 0
+[2025-05-05T02:46:58.491+0000] {taskinstance.py:2778} INFO - 0 downstream tasks scheduled from follow-on schedule check

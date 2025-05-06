@@ -1,0 +1,18 @@
+[2025-05-05T13:31:21.512+0000] {taskinstance.py:1159} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: Load_Data.trigger_preprocess_data manual__2025-05-05T13:25:47.940458+00:00 [queued]>
+[2025-05-05T13:31:21.569+0000] {taskinstance.py:1159} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: Load_Data.trigger_preprocess_data manual__2025-05-05T13:25:47.940458+00:00 [queued]>
+[2025-05-05T13:31:21.572+0000] {taskinstance.py:1361} INFO - Starting attempt 1 of 2
+[2025-05-05T13:31:21.644+0000] {taskinstance.py:1382} INFO - Executing <Task(TriggerDagRunOperator): trigger_preprocess_data> on 2025-05-05 13:25:47.940458+00:00
+[2025-05-05T13:31:21.668+0000] {standard_task_runner.py:57} INFO - Started process 63 to run task
+[2025-05-05T13:31:21.724+0000] {standard_task_runner.py:84} INFO - Running: ['airflow', 'tasks', 'run', 'Load_Data', 'trigger_preprocess_data', 'manual__2025-05-05T13:25:47.940458+00:00', '--job-id', '82', '--raw', '--subdir', 'DAGS_FOLDER/Load_Data.py', '--cfg-path', '/tmp/tmpcwi4ztbq']
+[2025-05-05T13:31:21.748+0000] {standard_task_runner.py:85} INFO - Job 82: Subtask trigger_preprocess_data
+[2025-05-05T13:31:22.034+0000] {task_command.py:416} INFO - Running <TaskInstance: Load_Data.trigger_preprocess_data manual__2025-05-05T13:25:47.940458+00:00 [running]> on host airflow-worker-5c47d7d789-mw9hk
+[2025-05-05T13:31:22.818+0000] {taskinstance.py:1662} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='Load_Data' AIRFLOW_CTX_TASK_ID='trigger_preprocess_data' AIRFLOW_CTX_EXECUTION_DATE='2025-05-05T13:25:47.940458+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2025-05-05T13:25:47.940458+00:00'
+[2025-05-05T13:31:25.283+0000] {warnings.py:109} WARNING - /home/airflow/.local/lib/python3.10/site-packages/airflow/providers/google/cloud/links/dataproc.py:79: AirflowProviderDeprecationWarning: This DataprocLink is deprecated.
+  warnings.warn(
+
+[2025-05-05T13:31:25.284+0000] {warnings.py:109} WARNING - /home/airflow/.local/lib/python3.10/site-packages/airflow/providers/google/cloud/links/dataproc.py:128: AirflowProviderDeprecationWarning: This DataprocListLink is deprecated.
+  warnings.warn("This DataprocListLink is deprecated.", AirflowProviderDeprecationWarning)
+
+[2025-05-05T13:31:26.959+0000] {taskinstance.py:1400} INFO - Marking task as SUCCESS. dag_id=Load_Data, task_id=trigger_preprocess_data, execution_date=20250505T132547, start_date=20250505T133121, end_date=20250505T133126
+[2025-05-05T13:31:27.066+0000] {local_task_job_runner.py:228} INFO - Task exited with return code 0
+[2025-05-05T13:31:27.130+0000] {taskinstance.py:2778} INFO - 0 downstream tasks scheduled from follow-on schedule check

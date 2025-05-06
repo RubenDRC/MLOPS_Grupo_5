@@ -22,8 +22,18 @@ spec:
           volumeMounts:
             - name: dags
               mountPath: /opt/airflow/dags
+            - name: logs
+              mountPath: /opt/airflow/logs
+            - name: data
+              mountPath: /opt/airflow/data
       volumes:
         - name: dags
           hostPath:
             path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/dags
+        - name: logs
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/logs
+        - name: data
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/data
 

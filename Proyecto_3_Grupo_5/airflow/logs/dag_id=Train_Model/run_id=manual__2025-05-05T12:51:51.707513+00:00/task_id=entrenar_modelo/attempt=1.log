@@ -1,0 +1,33 @@
+[2025-05-05T12:52:02.610+0000] {taskinstance.py:1159} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: Train_Model.entrenar_modelo manual__2025-05-05T12:51:51.707513+00:00 [queued]>
+[2025-05-05T12:52:02.687+0000] {taskinstance.py:1159} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: Train_Model.entrenar_modelo manual__2025-05-05T12:51:51.707513+00:00 [queued]>
+[2025-05-05T12:52:02.688+0000] {taskinstance.py:1361} INFO - Starting attempt 1 of 2
+[2025-05-05T12:52:02.758+0000] {taskinstance.py:1382} INFO - Executing <Task(PythonOperator): entrenar_modelo> on 2025-05-05 12:51:51.707513+00:00
+[2025-05-05T12:52:02.835+0000] {standard_task_runner.py:57} INFO - Started process 115 to run task
+[2025-05-05T12:52:02.855+0000] {standard_task_runner.py:84} INFO - Running: ['airflow', 'tasks', 'run', 'Train_Model', 'entrenar_modelo', 'manual__2025-05-05T12:51:51.707513+00:00', '--job-id', '48', '--raw', '--subdir', 'DAGS_FOLDER/Train_Data.py', '--cfg-path', '/tmp/tmpdfur7ck4']
+[2025-05-05T12:52:02.865+0000] {standard_task_runner.py:85} INFO - Job 48: Subtask entrenar_modelo
+[2025-05-05T12:52:03.136+0000] {task_command.py:416} INFO - Running <TaskInstance: Train_Model.entrenar_modelo manual__2025-05-05T12:51:51.707513+00:00 [running]> on host airflow-worker-74c55458f9-gfj2z
+[2025-05-05T12:52:03.645+0000] {taskinstance.py:1662} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='Train_Model' AIRFLOW_CTX_TASK_ID='entrenar_modelo' AIRFLOW_CTX_EXECUTION_DATE='2025-05-05T12:51:51.707513+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2025-05-05T12:51:51.707513+00:00'
+[2025-05-05T12:52:03.769+0000] {warnings.py:109} WARNING - /opt/airflow/dags/Train_Data.py:30: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql("SELECT * FROM diabetic_data_clean", conn)
+
+[2025-05-05T12:52:03.882+0000] {taskinstance.py:1937} ERROR - Task failed with exception
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.10/site-packages/airflow/operators/python.py", line 192, in execute
+    return_value = self.execute_callable()
+  File "/home/airflow/.local/lib/python3.10/site-packages/airflow/operators/python.py", line 209, in execute_callable
+    return self.python_callable(*self.op_args, **self.op_kwargs)
+  File "/opt/airflow/dags/Train_Data.py", line 36, in entrenar_modelo
+    X = df.drop(columns=['readmitted'])
+  File "/home/airflow/.local/lib/python3.10/site-packages/pandas/core/frame.py", line 5344, in drop
+    return super().drop(
+  File "/home/airflow/.local/lib/python3.10/site-packages/pandas/core/generic.py", line 4711, in drop
+    obj = obj._drop_axis(labels, axis, level=level, errors=errors)
+  File "/home/airflow/.local/lib/python3.10/site-packages/pandas/core/generic.py", line 4753, in _drop_axis
+    new_axis = axis.drop(labels, errors=errors)
+  File "/home/airflow/.local/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6992, in drop
+    raise KeyError(f"{labels[mask].tolist()} not found in axis")
+KeyError: "['readmitted'] not found in axis"
+[2025-05-05T12:52:04.018+0000] {taskinstance.py:1400} INFO - Marking task as UP_FOR_RETRY. dag_id=Train_Model, task_id=entrenar_modelo, execution_date=20250505T125151, start_date=20250505T125202, end_date=20250505T125204
+[2025-05-05T12:52:04.129+0000] {standard_task_runner.py:104} ERROR - Failed to execute job 48 for task entrenar_modelo ("['readmitted'] not found in axis"; 115)
+[2025-05-05T12:52:04.276+0000] {local_task_job_runner.py:228} INFO - Task exited with return code 1
+[2025-05-05T12:52:04.481+0000] {taskinstance.py:2778} INFO - 0 downstream tasks scheduled from follow-on schedule check

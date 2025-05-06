@@ -18,6 +18,7 @@ spec:
           command: ["bash", "-c"]
           args:
             - |
+              pip install --no-cache-dir --break-system-packages -r /airflow/requirements.txt && \
               airflow db upgrade && \
               airflow users create \
                 --username airflow --password airflow \
@@ -32,20 +33,23 @@ spec:
           volumeMounts:
             - name: dags
               mountPath: /opt/airflow/dags
+            - name: airflow-folder
+              mountPath: /airflow
+            - name: logs
+              mountPath: /opt/airflow/logs
+            - name: data
+              mountPath: /opt/airflow/data
       volumes:
         - name: dags
           hostPath:
             path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/dags
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: airflow-webserver
-spec:
-  selector:
-    app: airflow-webserver
-  ports:
-    - port: 8080
-      targetPort: 8080
-  type: NodePort
+        - name: airflow-folder
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow
+        - name: logs
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/logs
+        - name: data
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/data
 
