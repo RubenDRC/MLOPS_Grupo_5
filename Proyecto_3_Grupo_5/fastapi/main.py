@@ -1,23 +1,35 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel,Field
+from pydantic import BaseModel, Field
 import mlflow
 import mlflow.pyfunc
 import pandas as pd
 import os
 import pickle
 from mlflow.tracking import MlflowClient
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from starlette.responses import Response
+import time
 
-# Configurar MLflow con variables de entorno desde Kubernetes
+# Configurar MLflow desde variables de entorno (o valor por defecto)
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://10.152.183.196:5000"))
 
+# Inicializar FastAPI
 app = FastAPI(
     title="API Predicciones Diabetes",
     description="Predicciones usando modelos registrados en MLflow",
     version="1.0"
 )
 
-# Schema de entrada
+# Métricas Prometheus
+REQUEST_COUNT = Counter('predict_requests_total', 'Total de peticiones de predicción')
+REQUEST_LATENCY = Histogram('predict_latency_seconds', 'Tiempo de latencia de predicción')
 
+# Endpoint de métricas
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+# Schema de entrada
 class PredictionInput(BaseModel):
     race: str = Field(..., alias="race")
     gender: str = Field(..., alias="gender")
@@ -74,13 +86,17 @@ class PredictionInput(BaseModel):
 def root():
     return {"message": "Bienvenido a la API de MLflow para Diabetes", "docs": "/docs"}
 
-# ✅ Descargar artefacto directamente desde el run usando MLflowClient
+# Descargar artefacto desde MLflow
 def descargar_artefacto(run_id: str, filename: str):
     client = MlflowClient()
     return client.download_artifacts(run_id, filename)
 
+# Endpoint principal de predicción
 @app.post("/predict")
 def predecir(datos: PredictionInput, model_name: str):
+    start_time = time.time()
+    REQUEST_COUNT.inc()
+
     try:
         client = MlflowClient()
         versiones = client.get_latest_versions(model_name, stages=["Production"])
@@ -124,4 +140,7 @@ def predecir(datos: PredictionInput, model_name: str):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en /predict: {str(e)}")
+
+    finally:
+        REQUEST_LATENCY.observe(time.time() - start_time)
 
