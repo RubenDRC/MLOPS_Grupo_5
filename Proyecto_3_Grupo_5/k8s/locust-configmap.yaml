@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: locustfile
+data:
+  locustfile.py: |
+    from locust import HttpUser, task, between
+
+    class KnativeDemoUser(HttpUser):
+        host = "http://10.43.101.195:30190"
+        wait_time = between(1, 2)
+
+        @task
+        def predict(self):
+            payload = {
+                "race": "Caucasian",
+                "gender": "Male",
+                "age": "[50-60)",
+                "weight": "[100-125)",
+                "admission_type_id": "3",
+                "discharge_disposition_id": "1",
+                "admission_source_id": "1",
+                "time_in_hospital": "2",
+                "payer_code": "BC",
+                "medical_specialty": "Surgery-General",
+                "num_lab_procedures": "5",
+                "num_procedures": "4",
+                "num_medications": "11",
+                "number_outpatient": "0",
+                "number_emergency": "0",
+                "number_inpatient": "0",
+                "diag_1": "196",
+                "diag_2": "199",
+                "diag_3": "250",
+                "number_diagnoses": "7",
+                "max_glu_serum": "no aplica",
+                "a1cresult": "no aplica",
+                "metformin": "No",
+                "repaglinide": "No",
+                "nateglinide": "No",
+                "chlorpropamide": "No",
+                "glimepiride": "No",
+                "acetohexamide": "No",
+                "glipizide": "No",
+                "glyburide": "Steady",
+                "tolbutamide": "No",
+                "pioglitazone": "No",
+                "rosiglitazone": "No",
+                "acarbose": "No",
+                "miglitol": "No",
+                "troglitazone": "No",
+                "tolazamide": "No",
+                "examide": "No",
+                "citoglipton": "No",
+                "insulin": "No",
+                "glyburide_metformin": "No",
+                "glipizide_metformin": "No",
+                "glimepiride_pioglitazone": "No",
+                "metformin_rosiglitazone": "No",
+                "metformin_pioglitazone": "No",
+                "change": "No",
+                "diabetesmed": "Yes"
+            }
+            self.client.post("/predict?model_name=RandomForestModel", json=payload)
+
