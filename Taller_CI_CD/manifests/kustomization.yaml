@@ -14,12 +14,12 @@ resources:
   - script-deployment.yaml
 
   # Prometheus
-  - prometheus-config.yaml
+  - prometheus-configmap.yaml
   - prometheus-deployment.yaml
   - prometheus-service.yaml
 
   # Grafana
-  - grafana-config.yaml
+  - grafana-datasource.yaml
   - grafana-deployment.yaml
   - grafana-service.yaml
 

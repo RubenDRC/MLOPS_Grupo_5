@@ -5,20 +5,17 @@ metadata:
   namespace: argocd
 spec:
   project: default
-
   source:
-    repoURL: git@github.com:RubenDRC/MLOPS_Grupo_5.git
-    targetRevision: HEAD
+    repoURL: https://github.com/RubenDRC/MLOPS_Grupo_5.git
+    targetRevision: main
     path: Taller_CI_CD/manifests
-
   destination:
     server: https://kubernetes.default.svc
     namespace: ml-api
-
   syncPolicy:
     automated:
-      prune: true
       selfHeal: true
+      prune: true
     syncOptions:
       - CreateNamespace=true
 

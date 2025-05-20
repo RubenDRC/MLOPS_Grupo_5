@@ -2,6 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: loadtester
+  namespace: ml-api
+  labels:
+    app: loadtester
 spec:
   replicas: 1
   selector:
@@ -14,15 +17,18 @@ spec:
     spec:
       containers:
         - name: loadtester
-          image: loadtester:latest
-          imagePullPolicy: Never
-          command: ["python"]
-          args: ["main.py"]
+          image: python:3.10
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              pip install --no-cache-dir -r /load/requirements.txt && \
+              python /load/main.py && \
+              sleep 3600
           volumeMounts:
-            - name: loadtester-volume
-              mountPath: /app
+            - name: script-volume
+              mountPath: /load
       volumes:
-        - name: loadtester-volume
+        - name: script-volume
           hostPath:
             path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Taller_CI_CD/loadtester
             type: Directory

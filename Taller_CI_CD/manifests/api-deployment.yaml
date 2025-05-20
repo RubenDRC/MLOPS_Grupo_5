@@ -2,6 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api
+  namespace: ml-api
+  labels:
+    app: api
 spec:
   replicas: 1
   selector:
@@ -14,8 +17,12 @@ spec:
     spec:
       containers:
         - name: api
-          image: api:latest
-          imagePullPolicy: Never
+          image: python:3.10
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              pip install --no-cache-dir -r /app/requirements.txt && \
+              uvicorn app.main:app --host 0.0.0.0 --port 8000
           ports:
             - containerPort: 8000
           volumeMounts:

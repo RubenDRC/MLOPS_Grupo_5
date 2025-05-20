@@ -1,30 +1,29 @@
-# train_model.py
 import pandas as pd
-import joblib
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+import joblib
 
-# Cargar dataset
-df = pd.read_csv("app/data/penguins_size.csv")
+# Leer el dataset desde la carpeta local
+df = pd.read_csv("data/penguins_size.csv")
 
-# Eliminar filas con valores nulos
-df.dropna(inplace=True)
+# Eliminar filas con valores faltantes
+df = df.dropna()
 
-# Variables predictoras y objetivo
-X = df[['Culmen Length (mm)', 'Culmen Depth (mm)', 'Flipper Length (mm)', 'Body Mass (g)']]
-y = df['Species']
+# Seleccionar características y variable objetivo
+X = df[['culmen_length_mm', 'culmen_depth_mm', 'flipper_length_mm', 'body_mass_g']]
+y = df['species']
 
 # Codificar la variable objetivo
 le = LabelEncoder()
 y_encoded = le.fit_transform(y)
 
-# Entrenamiento del modelo
-X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
+# Entrenar modelo
 model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
+model.fit(X, y_encoded)
 
-# Guardar modelo y codificador
+# Guardar el modelo y el codificador
 joblib.dump(model, "app/model.pkl")
 joblib.dump(le, "app/label_encoder.pkl")
+
+print("Modelo entrenado y guardado correctamente.")
 
