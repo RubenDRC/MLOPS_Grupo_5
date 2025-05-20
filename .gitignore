@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.log
+*.db
+*.sqlite3
+*.pkl
+.airflow/
+logs/
+# Ignorar logs de Airflow
+Proyecto_3_Grupo_5/airflow/logs/
