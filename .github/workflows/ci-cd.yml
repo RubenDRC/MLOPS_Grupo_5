@@ -27,14 +27,18 @@ jobs:
         working-directory: Taller_CI_CD/api
         run: python train_model.py
 
-      - name: Commit trained model artifacts
+      - name: Set up SSH and push model
         working-directory: Taller_CI_CD
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}  # Usa el nombre del secreto correcto
+          DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
         run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
           git add -f api/app/model.pkl api/app/label_encoder.pkl
           git commit -m "Update trained model artifacts" || echo "No changes to commit"
-          git push origin main
+          git push git@github.com:${{ github.repository }}.git HEAD:main
