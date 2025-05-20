@@ -38,3 +38,4 @@ jobs:
           git add -f api/app/model.pkl api/app/label_encoder.pkl
           git commit -m "Update trained model artifacts" || echo "No changes to commit"
           git push origin main
+
