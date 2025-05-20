@@ -24,8 +24,8 @@ jobs:
           pip install --no-cache-dir -r requirements.txt
 
       - name: Train model
-        working-directory: Taller_CI_CD
-        run: python api/train_model.py
+        working-directory: Taller_CI_CD/api
+        run: python train_model.py
 
       - name: Commit trained model artifacts
         working-directory: Taller_CI_CD
