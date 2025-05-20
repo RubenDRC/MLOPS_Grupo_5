@@ -1,0 +1,28 @@
+# Niveles/4/manifests/kustomization.yaml
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ml-api
+
+resources:
+  # API + servicio
+  - api-deployment.yaml
+  - api-service.yaml
+
+  # Loadtester
+  - script-deployment.yaml
+
+  # Prometheus
+  - prometheus-config.yaml
+  - prometheus-deployment.yaml
+  - prometheus-service.yaml
+
+  # Grafana
+  - grafana-config.yaml
+  - grafana-deployment.yaml
+  - grafana-service.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: penguin-classifier
+

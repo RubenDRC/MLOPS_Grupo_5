@@ -1,0 +1,67 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_API: ${{ github.repository }}/api
+  IMAGE_LOADTESTER: ${{ github.repository }}/loadtester
+
+jobs:
+  train-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+
+    - name: Install dependencies
+      working-directory: Niveles/4/api
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Train and save model
+      working-directory: Niveles/4/api
+      run: python train_model.py
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push API image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./Niveles/4/api
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_API }}:latest
+
+    - name: Build and push LoadTester image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./Niveles/4/loadtester
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_LOADTESTER }}:latest
+
+    - name: Update manifests with new image tags
+      run: |
+        sed -i "s|image: .*api.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_API }}:latest|g" Niveles/4/manifests/api-deployment.yaml
+        sed -i "s|image: .*loadtester.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_LOADTESTER }}:latest|g" Niveles/4/manifests/script-deployment.yaml
+
+    - name: Commit updated manifests
+      run: |
+        git config --global user.name "${{ github.actor }}"
+        git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+        git add Niveles/4/manifests/*.yaml
+        git commit -m "Update image tags to latest [CI skip]" || echo "No changes"
+        git push
