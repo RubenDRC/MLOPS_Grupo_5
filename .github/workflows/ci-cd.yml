@@ -19,10 +19,13 @@ jobs:
           python-version: '3.9'
 
       - name: Train model
-        run: python api/train_model.py
+        run: |
+          cd Taller_CI_CD
+          python api/train_model.py
 
       - name: Commit trained model artifacts
         run: |
+          cd Taller_CI_CD
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add api/app/model.pkl api/app/label_encoder.pkl
