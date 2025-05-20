@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  train-and-commit:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,36 +18,13 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
-        run: |
-          pip install -r api/requirements.txt
-
       - name: Train model
-        run: |
-          python api/train_model.py
+        run: python api/train_model.py
 
-      - name: Build API Docker image
-        run: |
-          docker build -t api:latest ./api
-
-      - name: Build LoadTester Docker image
-        run: |
-          docker build -t loadtester:latest ./loadtester
-
-      - name: Set up Kustomize
-        run: |
-          curl -sfLo kustomize https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.1/kustomize_v5.0.1_linux_amd64
-          chmod +x kustomize
-          sudo mv kustomize /usr/local/bin/
-
-      - name: Update manifest versions (simulado)
-        run: |
-          echo "Aquí podrías usar Kustomize edit set image o yq para actualizar imágenes"
-
-      - name: Commit manifest changes
+      - name: Commit trained model artifacts
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add manifests/
-          git commit -m "Update manifests with latest image versions" || echo "No changes to commit"
+          git add api/app/model.pkl api/app/label_encoder.pkl
+          git commit -m "Update trained model artifacts" || echo "No changes to commit"
           git push
