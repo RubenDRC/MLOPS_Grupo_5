@@ -4,7 +4,7 @@ from sklearn.preprocessing import LabelEncoder
 import joblib
 
 
-# Prueba cambios 11
+# Prueba cambios 12
 
 # Leer el dataset desde la carpeta local
 df = pd.read_csv("data/penguins_size.csv")
