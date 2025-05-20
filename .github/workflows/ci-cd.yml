@@ -18,14 +18,18 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Train model
+      - name: Install dependencies
+        working-directory: Taller_CI_CD/api
         run: |
-          cd Taller_CI_CD
-          python api/train_model.py
+          pip install --no-cache-dir -r requirements.txt
+
+      - name: Train model
+        working-directory: Taller_CI_CD
+        run: python api/train_model.py
 
       - name: Commit trained model artifacts
+        working-directory: Taller_CI_CD
         run: |
-          cd Taller_CI_CD
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add api/app/model.pkl api/app/label_encoder.pkl
