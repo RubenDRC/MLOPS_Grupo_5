@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: penguin-classifier
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: git@github.com:RubenDRC/MLOPS_Grupo_5.git
+    targetRevision: HEAD
+    path: Taller_CI_CD/manifests
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ml-api
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
