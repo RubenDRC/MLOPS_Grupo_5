@@ -26,31 +26,35 @@
 
 ## 📂 Estructura del desarrollo:
 
-├── .github/workflows/ci-cd.yml
-Taller_CI_CD/
-├── api/ # código y modelo
-│ ├── app/main.py  
-│ ├── app/model.pkl # generado por train_model.py
-│ ├── train_model.py
-│ ├── Dockerfile
-│ └── requirements.txt
-├── loadtester/ 
-│ ├── main.py
-│ ├── Dockerfile
-│ └── requirements.txt
-├── manifests/ # manifiestos K8s + kustomization
-│ ├── api-deployment.yaml
-│ ├── api-service.yaml
-│ ├── grafana-datasource.yaml
-│ ├── grafana-deployment.yaml
-│ ├── grafana-service.yaml
-│ ├── prometheus-configmap.yaml
-│ ├── prometheus-deployment-.yaml
-│ ├── prometheus-service.yaml
-│ ├── script-deployment.yaml
-│ └── kustomization.yaml
-│── argo-cd/
-│ │── app.yaml # definición de la Application
+```
+MLOps_Grupo_5/
+├──.github/workflows/ci-cd.yml
+├── Taller_CI_CD/
+│   ├── api/ # código y modelo
+│      ├── app/main.py  
+│      ├── app/model.pkl # generado por train_model.py
+│      ├── train_model.py
+│      ├── Dockerfile
+│      └── requirements.txt
+│   ├── loadtester/ 
+│      ├── main.py
+│      ├── Dockerfile
+│      └── requirements.txt
+│   ├── manifests/ # manifiestos K8s + kustomization
+│      ├── api-deployment.yaml
+│      ├── api-service.yaml
+│      ├── grafana-datasource.yaml
+│      ├── grafana-deployment.yaml
+│      ├── grafana-service.yaml
+│      ├── prometheus-configmap.yaml
+│      ├── prometheus-deployment-.yaml
+│      ├── prometheus-service.yaml
+│      ├── script-deployment.yaml
+│      └── kustomization.yaml
+│   ├── argo-cd/
+│      ├── app.yaml           #
+└── README.md   
+```
 
 
 ** Si desea ver la prueba y despliegue del sistema, ** puede verlo en el siguiente video: https://youtu.be/i4d9ynKVjt8 
