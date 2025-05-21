@@ -93,16 +93,16 @@ microk8s kubectl get svc
 ```
 ## 5 · Acceso a los servicios 
 ```bash
-- **FastAPI**  (Swagger UI en /docs)
+- FastAPI:  (Swagger UI en /docs)
 kubectl port-forward svc/api 8000:8000 -n $NS &
 
-- **Prometheus**
+- Prometheus:
 kubectl port-forward svc/prometheus 9090:9090 -n $NS &
 
-- **Grafana**
+- Grafana:
 kubectl port-forward svc/grafana 3000:3000 -n $NS &
 
-- **Argo CD **  
+- Argo CD:
 kubectl port-forward svc/argocd-server 8080:443 -n argocd &
 ```
 
