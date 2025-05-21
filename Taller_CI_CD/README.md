@@ -56,7 +56,34 @@ MLOps_Grupo_5/
 └── README.md   
 ```
 
+---
 
-### Si desea ver la prueba y despliegue del sistema, ** puede verlo en el siguiente video: https://youtu.be/i4d9ynKVjt8 
+**Si desea ver la prueba y despliegue del sistema,** puede verlo en el siguiente video: https://youtu.be/i4d9ynKVjt8 
+
+---
+
+## Pasos para la Ejecución
+
+# Paso 1: FastAPI y loadtester
+```bash
+microk8s kubectl apply -f k8s/fastapi-deployment.yaml
+microk8s kubectl apply -f k8s/fastapi-service.yaml
+microk8s kubectl apply -f k8s/script-deployment.yaml
+```
+
+# Paso 2: Observabilidad
+```bash
+microk8s kubectl apply -f k8s/grafana-datasource.yaml
+microk8s kubectl apply -f k8s/grafana-deployment.yaml
+microk8s kubectl apply -f k8s/grafana-service.yaml
+microk8s kubectl apply -f k8s/prometheus-configmap.yaml
+microk8s kubectl apply -f k8s/prometheus-deployment.yaml
+microk8s kubectl apply -f k8s/prometheus-service.yaml
+```
+
+### 3. Puertos y Direcciones de Acceso
+```bash
+microk8s kubectl get svc
+```
 
 
