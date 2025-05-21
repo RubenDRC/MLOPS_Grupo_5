@@ -92,9 +92,7 @@ microk8s kubectl get pods
 microk8s kubectl get svc
 ```
 ## 5 · Acceso a los servicios 
-
 ```bash
-
 - **FastAPI**  (Swagger UI en /docs)
 kubectl port-forward svc/api 8000:8000 -n $NS &
 
@@ -106,7 +104,7 @@ kubectl port-forward svc/grafana 3000:3000 -n $NS &
 
 - **Argo CD **  
 kubectl port-forward svc/argocd-server 8080:443 -n argocd &
-
+```
 
 
 
