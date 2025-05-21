@@ -64,26 +64,51 @@ MLOps_Grupo_5/
 
 ## Pasos para la Ejecución
 
-# Paso 1: FastAPI y loadtester
+#### 1: FastAPI y loadtester
 ```bash
-microk8s kubectl apply -f k8s/fastapi-deployment.yaml
-microk8s kubectl apply -f k8s/fastapi-service.yaml
-microk8s kubectl apply -f k8s/script-deployment.yaml
+microk8s kubectl apply -f manifest/fastapi-deployment.yaml
+microk8s kubectl apply -f manifest/fastapi-service.yaml
+microk8s kubectl apply -f manifest/script-deployment.yaml
 ```
 
-# Paso 2: Observabilidad
+#### 2: Observabilidad
 ```bash
-microk8s kubectl apply -f k8s/grafana-datasource.yaml
-microk8s kubectl apply -f k8s/grafana-deployment.yaml
-microk8s kubectl apply -f k8s/grafana-service.yaml
-microk8s kubectl apply -f k8s/prometheus-configmap.yaml
-microk8s kubectl apply -f k8s/prometheus-deployment.yaml
-microk8s kubectl apply -f k8s/prometheus-service.yaml
+microk8s kubectl apply -f manifests/grafana-datasource.yaml
+microk8s kubectl apply -f manifests/grafana-deployment.yaml
+microk8s kubectl apply -f manifests/grafana-service.yaml
+microk8s kubectl apply -f manifests/prometheus-configmap.yaml
+microk8s kubectl apply -f manifests/prometheus-deployment.yaml
+microk8s kubectl apply -f manifests/prometheus-service.yaml
 ```
 
-### 3. Puertos y Direcciones de Acceso
+### 3. Argo
 ```bash
+microk8s kubectl apply -f argo-cd/app.yaml
+```
+
+### 4. Verificar despliegue
+```bash
+microk8s kubectl get pods
 microk8s kubectl get svc
 ```
+## 5 · Acceso a los servicios 
+
+```bash
+
+##### FastAPI (Swagger UI en /docs)
+kubectl port-forward svc/api 8000:8000 -n $NS &
+
+##### Prometheus
+kubectl port-forward svc/prometheus 9090:9090 -n $NS &
+
+##### Grafana
+kubectl port-forward svc/grafana 3000:3000 -n $NS &
+
+##### Argo CD 
+kubectl port-forward svc/argocd-server 8080:443 -n argocd &
+
+"
+
+
 
 
