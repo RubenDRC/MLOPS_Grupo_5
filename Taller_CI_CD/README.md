@@ -93,7 +93,7 @@ microk8s kubectl get svc
 ```
 ## 5 · Acceso a los servicios 
 ```bash
-- FastAPI:  (Swagger UI en /docs)
+- FastAPI:  
 kubectl port-forward svc/api 8000:8000 -n $NS &
 
 - Prometheus:
