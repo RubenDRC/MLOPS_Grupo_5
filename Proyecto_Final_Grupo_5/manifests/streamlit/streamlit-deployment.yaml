@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamlit
+  namespace: mlops-final
+  labels:
+    app: streamlit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamlit
+  template:
+    metadata:
+      labels:
+        app: streamlit
+    spec:
+      containers:
+        - name: streamlit
+          image: rubenromero800/streamlit-mlflow:latest
+          workingDir: /app
+          command: ["bash", "-c"]
+          args:
+            - |
+              pip install --no-cache-dir -r requirements.txt && \
+              streamlit run app.py --server.port=8503 --server.address=0.0.0.0
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: http://mlflow:5000
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: http://minio:9000
+            - name: AWS_ACCESS_KEY_ID
+              value: admin
+            - name: AWS_SECRET_ACCESS_KEY
+              value: supersecret
+          ports:
+            - containerPort: 8503
+

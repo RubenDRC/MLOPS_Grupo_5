@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-webserver
+  namespace: mlops-final
+  labels:
+    app.kubernetes.io/name: airflow
+    app.kubernetes.io/component: webserver
+    app.kubernetes.io/part-of: airflow
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=true, Replace=true
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-webserver
+  template:
+    metadata:
+      labels:
+        app: airflow-webserver
+    spec:
+      containers:
+        - name: webserver
+          image: apache/airflow:2.7.3-python3.10
+          command: ["bash", "-c"]
+          args:
+            - |
+              pip install --no-cache-dir --break-system-packages -r /airflow/requirements.txt && \
+              airflow db upgrade && \
+              airflow users create \
+                --username airflow --password airflow \
+                --firstname Air --lastname Flow \
+                --role Admin --email airflow@example.com && \
+              airflow webserver
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: airflow-config
+          volumeMounts:
+            - name: dags
+              mountPath: /opt/airflow/dags
+            - name: airflow-folder
+              mountPath: /airflow
+            - name: logs
+              mountPath: /opt/airflow/logs
+      volumes:
+        - name: dags
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_Final_Grupo_5/airflow/dags
+        - name: airflow-folder
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_Final_Grupo_5/airflow
+        - name: logs
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_Final_Grupo_5/airflow/logs
+

@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+requests
+pydantic
+mlflow
+psycopg2-binary
+boto3
+prometheus_client
+pandas
+

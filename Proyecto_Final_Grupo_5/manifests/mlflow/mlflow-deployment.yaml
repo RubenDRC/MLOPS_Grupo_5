@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+  namespace: mlops-final
+  labels:
+    app.kubernetes.io/name: mlflow
+    app.kubernetes.io/component: server
+    app.kubernetes.io/part-of: mlops
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=true, Replace=true
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      dnsPolicy: ClusterFirst
+      containers:
+        - name: mlflow
+          image: ghcr.io/mlflow/mlflow:v2.9.2
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MLFLOW_BACKEND_STORE_URI
+              value: postgresql+psycopg2://admin:admingrupo5@postgres-mlflow.mlops-final.svc.cluster.local:5432/mlflow_db
+            - name: ARTIFACT_ROOT
+              value: s3://mlflow/
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: http://minio:9000
+            - name: AWS_ACCESS_KEY_ID
+              value: admin
+            - name: AWS_SECRET_ACCESS_KEY
+              value: supersecret
+          command: ["sh", "-c"]
+          args:
+            - |
+              pip install --no-cache-dir -r /mlflow/requirements.txt && \
+              mlflow server \
+                --backend-store-uri=${MLFLOW_BACKEND_STORE_URI} \
+                --default-artifact-root=${ARTIFACT_ROOT} \
+                --host=0.0.0.0 \
+                --port=5000 \
+                --serve-artifacts
+          volumeMounts:
+            - name: mlflow-code
+              mountPath: /mlflow
+      volumes:
+        - name: mlflow-code
+          hostPath:
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_Final_Grupo_5/mlflow
+            type: Directory
+

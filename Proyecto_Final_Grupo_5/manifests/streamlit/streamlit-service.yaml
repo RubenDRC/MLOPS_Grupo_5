@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: streamlit
+  namespace: mlops-final
+spec:
+  selector:
+    app: streamlit
+  ports:
+    - protocol: TCP
+      port: 8503
+      targetPort: 8503
+      nodePort: 30850
+  type: NodePort
+
