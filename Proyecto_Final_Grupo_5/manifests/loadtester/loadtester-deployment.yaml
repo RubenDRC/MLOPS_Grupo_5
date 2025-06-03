@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: loadtester
-          image: rubenromero800/loadtester:latest
+          image: rubenromero800/loadtester:v4
           ports:
             - containerPort: 8089  # si usas locust UI
 

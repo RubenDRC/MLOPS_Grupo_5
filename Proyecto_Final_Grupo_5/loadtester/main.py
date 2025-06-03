@@ -2,26 +2,26 @@ import time
 import requests
 from datetime import date
 
-URL = "http://api:8000/predict"
+URL = "http://10.43.101.188:30190/predict"
 
 example = {
-    "brokered_by": "RE/MAX",
+    "brokered_by": "51868.0",
     "status": "for_sale",
-    "bed": 3,
-    "bath": 2,
-    "acre_lot": 0.25,
-    "street": "123 Main St",
-    "city": "Springfield",
-    "state": "IL",
-    "zip_code": "62704",
-    "house_size": 1500,
-    "prev_sold_date": date(2020, 1, 1).isoformat()
+    "bed": 5,
+    "bath": 3,
+    "acre_lot": 0.12,
+    "street": "1499905.0",
+    "city": "Enfield",
+    "state": "Connecticut",
+    "zip_code": "6082.0",
+    "house_size": 3117,
+    "prev_sold_date": date(2014, 7, 1).isoformat()
 }
 
 def load_test(n_requests: int = 100, interval: float = 0.5):
     for i in range(n_requests):
         try:
-            response = requests.post(f"{URL}?model_name=RandomForestModel", json=example)
+            response = requests.post(f"{URL}?model_name=RandomForestModel_Move", json=example)
             print(f"Request {i+1}: {response.status_code} - {response.json()}")
         except Exception as e:
             print(f"Request {i+1}: Error - {e}")
@@ -29,4 +29,5 @@ def load_test(n_requests: int = 100, interval: float = 0.5):
 
 if __name__ == "__main__":
     load_test()
+
 

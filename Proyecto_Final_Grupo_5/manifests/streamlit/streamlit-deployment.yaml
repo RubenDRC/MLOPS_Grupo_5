@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: streamlit
-          image: rubenromero800/streamlit-mlflow:latest
+          image: rubenromero800/streamlit:v5
           workingDir: /app
           command: ["bash", "-c"]
           args:
@@ -26,9 +26,9 @@ spec:
               streamlit run app.py --server.port=8503 --server.address=0.0.0.0
           env:
             - name: MLFLOW_TRACKING_URI
-              value: http://mlflow:5000
+              value: http://10.43.101.195:30958
             - name: MLFLOW_S3_ENDPOINT_URL
-              value: http://minio:9000
+              value: http://10.43.101.195:30090
             - name: AWS_ACCESS_KEY_ID
               value: admin
             - name: AWS_SECRET_ACCESS_KEY

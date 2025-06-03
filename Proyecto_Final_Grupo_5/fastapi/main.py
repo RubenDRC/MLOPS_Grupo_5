@@ -10,8 +10,8 @@ from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_
 from starlette.responses import Response
 import time
 
-# Configurar MLflow desde variables de entorno (o valor por defecto)
-mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000"))
+# URI fija de MLflow
+mlflow.set_tracking_uri("http://10.43.101.195:30958")
 
 # Inicializar FastAPI
 app = FastAPI(
@@ -32,35 +32,32 @@ def root():
 def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
-# Schema de entrada actualizado
+# Esquema de entrada
 class PredictionInput(BaseModel):
-    brokered_by: str = Field(..., alias="brokered_by")
-    status: str = Field(..., alias="status")
-    bed: int = Field(..., alias="bed")
-    bath: int = Field(..., alias="bath")
-    acre_lot: float = Field(..., alias="acre_lot")
-    street: str = Field(..., alias="street")
-    city: str = Field(..., alias="city")
-    state: str = Field(..., alias="state")
-    zip_code: str = Field(..., alias="zip_code")
-    house_size: int = Field(..., alias="house_size")
-    prev_sold_date: str = Field(..., alias="prev_sold_date")  # ISO date string
+    brokered_by: str
+    status: str
+    bed: int
+    bath: int
+    acre_lot: float
+    street: str
+    city: str
+    state: str
+    zip_code: str
+    house_size: int
+    prev_sold_date: str  # ISO date string
 
-    class Config:
-        allow_population_by_field_name = True
-
-# Descargar artefacto desde MLflow
+# Descargar artefactos
 def descargar_artefacto(run_id: str, filename: str):
     client = MlflowClient()
     return client.download_artifacts(run_id, filename)
 
-# Endpoint de predicción
 @app.post("/predict")
 def predecir(datos: PredictionInput, model_name: str):
     start_time = time.time()
     REQUEST_COUNT.inc()
 
     try:
+        # Obtener modelo y artefactos
         client = MlflowClient()
         versiones = client.get_latest_versions(model_name, stages=["Production"])
         if not versiones:
@@ -70,28 +67,35 @@ def predecir(datos: PredictionInput, model_name: str):
         model_uri = f"models:/{model_name}/Production"
         model = mlflow.pyfunc.load_model(model_uri)
 
-        # Descargar y cargar label_encoders.pkl
+        # Cargar encoders
         encoders_path = descargar_artefacto(run_id, "label_encoders.pkl")
         with open(encoders_path, "rb") as f:
             label_encoders = pickle.load(f)
 
-        # Preparar dataframe
+        # Preparar DataFrame
         df = pd.DataFrame([datos.dict()])
         df['prev_sold_date'] = pd.to_datetime(df['prev_sold_date'], errors='coerce')
         df['prev_sold_year'] = df['prev_sold_date'].dt.year.fillna(0)
         df.drop(columns=['prev_sold_date'], inplace=True)
 
-        # Codificar con LabelEncoders
+        # Codificar categóricas
         for col, le in label_encoders.items():
-            df[col] = le.transform(df[col].astype(str))
+            if col in df.columns:
+                df[col] = le.transform(df[col].astype(str))
+            else:
+                df[col] = 0
 
-        # Reordenar columnas
-        expected_cols = model.metadata.get_input_schema().input_names()
+        # Obtener columnas esperadas desde la firma
+        input_schema = model.metadata.get_input_schema()
+        expected_cols = [field.name for field in input_schema.inputs]
+
+        # Asegurar presencia y orden de columnas
         for col in expected_cols:
-            if col not in df:
+            if col not in df.columns:
                 df[col] = 0
         df = df[expected_cols]
 
+        # Predicción
         pred = model.predict(df)
 
         return {
@@ -105,4 +109,3 @@ def predecir(datos: PredictionInput, model_name: str):
 
     finally:
         REQUEST_LATENCY.observe(time.time() - start_time)
-

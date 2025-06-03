@@ -17,16 +17,16 @@ spec:
     spec:
       containers:
         - name: fastapi
-          image: rubenromero800/fastapi-mlflow:latest
+          image: rubenromero800/fastapi:v4
           ports:
             - containerPort: 8000
           env:
             - name: MLFLOW_TRACKING_URI
-              value: http://mlflow:5000
+              value: http://10.43.101.195:30958
             - name: DATABASE_URL
               value: postgresql://admin:admingrupo5@postgres-mlflow:5432/data_db
             - name: MLFLOW_S3_ENDPOINT_URL
-              value: http://minio:9000
+              value: http://10.43.101.195:30090
             - name: AWS_ACCESS_KEY_ID
               value: admin
             - name: AWS_SECRET_ACCESS_KEY
