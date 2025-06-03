@@ -41,11 +41,11 @@ spec:
       volumes:
         - name: dags
           hostPath:
-            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/dags
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_Final_Grupo_5/airflow/dags
         - name: airflow-folder
           hostPath:
-            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_Final_Grupo_5/airflow
         - name: logs
           hostPath:
-            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_3_Grupo_5/airflow/logs
+            path: /home/estudiante/Documents/MLOPS/MLOPS_Grupo_5/Proyecto_Final_Grupo_5/airflow/logs
 

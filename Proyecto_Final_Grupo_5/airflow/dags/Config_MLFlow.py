@@ -23,7 +23,7 @@ def configurar_mlflow():
         mlflow.set_tracking_uri("http://mlflow:5000")
 
         # Definir el experimento
-        mlflow.set_experiment("Proyecto_Final)
+        mlflow.set_experiment("RandomForest_Housing")
 
         # Autologging para scikit-learn
         mlflow.sklearn.autolog(

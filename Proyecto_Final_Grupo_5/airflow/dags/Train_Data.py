@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_squared_error
 from mlflow.tracking import MlflowClient
+from mlflow.models.signature import infer_signature
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -60,9 +61,9 @@ def entrenar_y_evaluar_modelo():
     mlflow.set_experiment("Proyecto_Final")
 
     param_grid = {
-        "n_estimators": [100],
+        "n_estimators": [50],
         "max_depth": [5, 10],
-        "max_features": [5, 10]
+        "max_features": [5,10]
     }
 
     model = GridSearchCV(RandomForestRegressor(random_state=42), param_grid, cv=3)
@@ -74,12 +75,16 @@ def entrenar_y_evaluar_modelo():
 
         mlflow.log_params(model.best_params_)
         mlflow.log_metric("mse", mse)
-        mlflow.sklearn.log_model(model.best_estimator_, "model")
+
+        # Agregar la firma del modelo
+        signature = infer_signature(X_train, model.predict(X_train))
+        mlflow.sklearn.log_model(model.best_estimator_, "model", signature=signature)
+
         mlflow.log_artifact("/tmp/label_encoders.pkl")
 
         print(f"MSE del nuevo modelo: {mse:.4f}")
 
-        # Registro del modelo en MLflow
+        # Registro del modelo
         client = MlflowClient()
         model_name = "RandomForestModel_Move"
 
@@ -118,7 +123,7 @@ with DAG(
 
     trigger_reset_data = TriggerDagRunOperator(
         task_id='trigger_drop_and_create_table',
-        trigger_dag_id='drop_and_create_raw_table'  # nombre exacto del DAG inicial
+        trigger_dag_id='drop_and_create_raw_table'
     )
 
     entrenar >> trigger_reset_data

@@ -22,18 +22,18 @@ def create_raw_table():
     cursor.execute("DROP TABLE IF EXISTS raw_data;")
     cursor.execute("""
         CREATE TABLE raw_data (
-            brokered_by VARCHAR,
-            status VARCHAR,
+            brokered_by FLOAT,
+            status TEXT,
             price FLOAT,
-            bed INTEGER,
-            bath INTEGER,
+            bed FLOAT,
+            bath FLOAT,
             acre_lot FLOAT,
-            street VARCHAR,
-            city VARCHAR,
-            state VARCHAR,
-            zip_code VARCHAR,
-            house_size INTEGER,
-            prev_sold_date DATE
+            street FLOAT,
+            city TEXT,
+            state TEXT,
+            zip_code FLOAT,
+            house_size FLOAT,
+            prev_sold_date TEXT
         );
     """)
 
