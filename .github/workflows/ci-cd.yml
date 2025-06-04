@@ -4,41 +4,47 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'MLOPS_Grupo_5/Proyecto_Final_Grupo_5/fastapi/**'
+      - 'MLOPS_Grupo_5/Proyecto_Final_Grupo_5/loadtester/**'
+      - 'MLOPS_Grupo_5/Proyecto_Final_Grupo_5/streamlit/**'
 
 jobs:
-  train-and-commit:
+  build-and-push:
     runs-on: ubuntu-latest
-
+    env:
+      REGISTRY: docker.io
+      USERNAME: rubenromero800
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
         with:
-          python-version: '3.9'
+          username: ${{ env.USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Install dependencies
-        working-directory: Taller_CI_CD/api
-        run: |
-          pip install --no-cache-dir -r requirements.txt
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Train model
-        working-directory: Taller_CI_CD/api
-        run: python train_model.py
+      - name: Build and push FastAPI image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./MLOPS_Grupo_5/Proyecto_Final_Grupo_5/fastapi
+          push: true
+          tags: ${{ env.USERNAME }}/fastapi:latest,${{ env.USERNAME }}/fastapi:${{ github.sha }}
 
-      - name: Set up SSH and push model
-        working-directory: Taller_CI_CD
-        env:
-          DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - name: Build and push LoadTester image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./MLOPS_Grupo_5/Proyecto_Final_Grupo_5/loadtester
+          push: true
+          tags: ${{ env.USERNAME }}/loadtester:latest,${{ env.USERNAME }}/loadtester:${{ github.sha }}
 
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add -f api/app/model.pkl api/app/label_encoder.pkl
-          git commit -m "Update trained model artifacts" || echo "No changes to commit"
-          git push git@github.com:${{ github.repository }}.git HEAD:main
+      - name: Build and push Streamlit image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./MLOPS_Grupo_5/Proyecto_Final_Grupo_5/streamlit
+          push: true
+          tags: ${{ env.USERNAME }}/streamlit:latest,${{ env.USERNAME }}/streamlit:${{ github.sha }}
