@@ -119,7 +119,7 @@ microk8s kubectl apply -f manifests/prometheus/prometheus-pvc.yaml
 microk8s kubectl apply -f manifests/prometheus/kustomization.yaml
 ```
 ---
-### 3. Argo
+#### 3. Argo
 ```bash
 microk8s kubectl apply -f manifests/argo/app.yaml
 microk8s kubectl apply -f manifests/argo/install-argocd.yaml
@@ -127,7 +127,7 @@ microk8s kubectl apply -f manifests/argo/kustomization.yaml
 ```
 
 ---
-### 4. Orquestación y registro de experimentos
+#### 4. Orquestación y registro de experimentos
 ```bash
 microk8s kubectl apply -f manifests/airflow/airflow-configmap.yaml
 microk8s kubectl apply -f manifests/airflow/airflow-scheduler.yaml
@@ -148,7 +148,7 @@ microk8s kubectl apply -f manifests/minio/minio-pvc.yaml
 microk8s kubectl apply -f manifests/minio/kustomization.yaml
 ```
 ---
-### 5. Bases de datos
+#### 5. Bases de datos
 ```bash
 microk8s kubectl apply -f manifests/postgres-airflow/postgres-airflow-deployment.yaml
 microk8s kubectl apply -f manifests/postgres-airflow/postgres-airflow-service.yaml
@@ -170,15 +170,15 @@ microk8s kubectl apply -f manifests/redis/redis-service.yaml
 microk8s kubectl apply -f manifests/redis/kustomization.yaml
 ```
 ---
-### 6. Verificar despliegue
+#### 6. Verificar despliegue
 ```bash
 microk8s kubectl get pods -n mlops-final
 microk8s kubectl get svc -n mlops-final
 ```
 ---
-## 7· Acceso a los servicios: Segun los puertos indicados en el desarrollo acceder a los servicios (validar con el video).
+#### 7· Acceso a los servicios: Segun los puertos indicados en el desarrollo acceder a los servicios (validar con el video).
 ---
-## 8. Credenciales de las máquinas virtuales
+#### 8. Credenciales de las máquinas virtuales
 
 - **Usuario escritorio remoto:** estudiante
 -**Contraseña:** 4Silvia+1974
