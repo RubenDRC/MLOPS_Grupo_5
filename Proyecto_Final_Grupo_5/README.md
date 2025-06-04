@@ -1,140 +1,181 @@
-# Proyecto 3 MLOps
+# 🚀 Proyecto Final – MLOps - **Grupo 5**
 
-## Descripción General
-Este proyecto implementa un pipeline completo de MLOps desplegado sobre **Kubernetes con MicroK8s**, donde cada servicio se ejecuta en un contenedor independiente y se comunica a través de servicios de red internos. El entorno incluye:
+## 🧩 Descripción General
+Este proyecto implementa un pipeline de MLOps que entrena modelos con GitHub Actions, construye imágenes Docker y los despliega en un clúster Kubernetes con MicroK8s. La API (FastAPI) y el frontend (Streamlit) consultan modelos desde MLflow y están desplegados en una máquina virtual externa, con monitoreo vía Prometheus y Grafana.
 
-1. **Airflow** - Orquestador de flujos de trabajo (DAGs) para ingesta de datos, entrenamiento y registro de modelos.
-2. **PostgreSQL (x3)** - Una instancia para la metadata de Airflow, otra para almacenar datos procesados y otra para MLflow (experimentos, métricas).
-3. **MinIO** - Almacenamiento de artefactos tipo S3, donde MLflow guarda modelos y otros archivos.
-4. **MLflow Server** - Servidor de tracking para registrar experimentos, métricas y versiones de modelos. Usa PostgreSQL como backend y MinIO como artifact store.
-5. **FastAPI** - Servicio de inferencia que carga modelos desde MLflow y expone un endpoint REST `/predict`.
-6. **Streamlit** - Interfaz gráfica para ingresar datos y obtener inferencias desde FastAPI.
+---
+## 🎯 Objetivo
 
-Esta arquitectura cubre el ciclo completo de MLOps: ingestión y orquestación → entrenamiento y registro de modelos → almacenamiento de artefactos → despliegue del modelo → consumo por usuario final.
+Implementar un sistema de MLOps completo que abarque:
+
+- Recolección y procesamiento automatizado de datos mediante **Airflow**.
+- Entrenamiento y reentrenamiento continuo de modelos con control de versiones usando **MLflow**.
+- Registro y versionamiento de modelos, seleccionando automáticamente el mejor para producción.
+- Exposición del modelo de producción a través de una **API FastAPI** conectada a MLflow.
+- Interfaz gráfica desarrollada en **Streamlit** para la inferencia y explicabilidad con SHAP.
+- Observabilidad mediante **Prometheus** y **Grafana**.
+- Empaquetado de todos los componentes como contenedores Docker.
+- Automatización de builds y publicación de imágenes con **GitHub Actions**.
+- Despliegue de todos los servicios sobre **Kubernetes**, orquestado automáticamente mediante **Argo CD**.
 
 ---
 
-## Estructura del Proyecto
+## ⚙️ Tecnologías Utilizadas
 
-MLOPS_Proyecto3/
-├── airflow/ # Contiene los DAGs
-│ └── dags/
-│ └── requirements.txt
-│ └── data
-│	└── diabetic_data.csv
-├── fastapi/ # Servicio de inferencia
-│ └── main.py
-│ └── requirements.txt
-├── streamlit/ # Interfaz de usuario
-│ └── app.py
-│ └── requirements.txt	
-├── k8s/ # Manifiestos de Kubernetes
-│ ├── 34 archivos .yaml (uno por componente)
+- **Airflow** para orquestación del pipeline de datos y entrenamiento.
+- **MLflow** para el seguimiento de experimentos, versionado y registro del mejor modelo.
+- **PostgreSQL**  Una instancia para la metadata de Airflow, otra para almacenar datos procesados y otra para MLflow (experimentos, métricas).
+- **Redis** como sistema de caché y soporte en la comunicación de servicios.
+- **FastAPI** para servir el modelo de producción expuesto desde MLflow.
+- **Streamlit** como interfaz de usuario para realizar inferencia y visualización de explicabilidad.
+- **Prometheus** y **Grafana** para monitoreo y visualización.
+- **GitHub Actions** para integración y entrega continua (CI/CD).
+- **Docker** para contenerización de los servicios.
+- **Kubernetes** para despliegue orquestado de microservicios.
+- **Argo CD** para GitOps y sincronización automática desde el repositorio.
+- 
+
+## 📂 Estructura del desarrollo:
+
+```
+MLOps_Grupo_5/
+├──.github/workflows/ci-cd.yml
+├── Proyecto_Final_Grupo_5/
+│   ├── airflow/
+│      ├── dags/
+│          ├── Config_MLFlow.py
+│          ├── Drop_And_Create_Table.py
+│          ├── Load_Data.py
+│          ├── Preprocess_Data.py
+│          └──  Train_Data.py
+│      └── requirements.txt
+│   ├── fastapi/
+│      ├── main.py  
+│      ├── Dockerfile
+│      └── requirements.txt
+│   ├── loadtester/ 
+│      ├── main.py
+│      ├── Dockerfile
+│      └── requirements.txt
+│   ├── manifests/ # manifiestos K8s + kustomization
+│      ├── airflow
+│      ├── api-service.yaml
+│      ├── argocd
+│      ├── fastapi
+│      ├── grafana
+│      ├── loadtester
+│      ├── minio
+│      ├── mlflow
+│      ├── postgres-airflow
+│      ├── postgres-data
+│      ├── postgres-mlflow
+│      ├── prometheus
+│      ├── redis
+│      ├── streamlit
+│      └── kustomization.yaml
+│   ├── mlflow/ 
+│      └── requirements.txt
+│   ├── streamlit/ 
+│      ├── app.py
+│      ├── Dockerfile
+│      └── requirements.txt
+└── README.md   
+```
+
 ---
 
-## Servicios Implementados
-
-### 1. Airflow
-- Webserver, Scheduler, Worker, Triggerer
-- Conectado a PostgreSQL (`postgres-airflow`)
-- Usa Redis como broker (`CeleryExecutor`)
-- Ejecuta DAGs para ingestión, procesamiento y entrenamiento
-
-### 2. PostgreSQL (x3 instancias)
-- **postgres-airflow**: almacena metadatos de Airflow
-- **postgres-mlflow**: almacena runs, métricas y modelos registrados en MLflow
-- **postgres-data**: base de datos con datos crudos o preprocesados (por ejemplo, covertype)
-
-### 3. MinIO
-- Servicio tipo S3 que actúa como `artifact store` para MLflow
-
-### 4. MLflow Server
-- Tracking de experimentos, runs, parámetros, métricas y modelos
-- Conectado a PostgreSQL (`postgres-mlflow`) y MinIO
-
-### 5. FastAPI
-- Exposición de modelos en stage "Production" desde MLflow
-- Endpoint REST `/predict` para hacer inferencias
-
-### 6. Streamlit
-- Interfaz interactiva que se comunica con FastAPI para mostrar resultados al usuario
-- Expuesta en el puerto 8503
-
-### 7. Observabilidad
-- Se implementaron los servicios de grafana,locust y prometheus para realizar observabilidad de la operación de inferencia
+**Si desea ver la prueba y despliegue del sistema,** puede verlo en el siguiente video: https://youtu.be/i4d9ynKVjt8 
 
 ---
 
 ## Pasos para la Ejecución
 
-### 1. Habilitar servicios en MicroK8s
+#### 1: FastAPI, Streamlit y loadtester
+```bash
+microk8s kubectl apply -f manifest/fastapi/fastapi-deployment.yaml
+microk8s kubectl apply -f manifest/fastapi/fastapi-service.yaml
+microk8s kubectl apply -f manifest/fastapi/kustomization.yaml
 
-```bash
-microk8s enable dns registry storage
-```
+microk8s kubectl apply -f manifest/streamlit/streamlit-deployment.yaml
+microk8s kubectl apply -f manifest/streamlit/streamlit-service.yaml
+microk8s kubectl apply -f manifest/streamlit/kustomization.yaml
 
-### 2. Aplicar los manifiestos en orden
-# Paso 1: Configuración común
-```bash
-microk8s kubectl apply -f k8s/airflow-configmap.yaml
-```
-# Paso 2: Bases de datos
-```bash
-microk8s kubectl apply -f k8s/postgres-airflow-pvc.yaml
-microk8s kubectl apply -f k8s/postgres-airflow-deployment.yaml
-microk8s kubectl apply -f k8s/postgres-airflow-service.yaml
-microk8s kubectl apply -f k8s/postgres-mlflow-pvc.yaml
-microk8s kubectl apply -f k8s/postgres-mlflow-deployment.yaml
-microk8s kubectl apply -f k8s/postgres-mlflow-service.yaml
-microk8s kubectl apply -f k8s/postgres-data-pvc.yaml
-microk8s kubectl apply -f k8s/postgres-data-deployment.yaml
-microk8s kubectl apply -f k8s/postgres-data-service.yaml
-```
-# Paso 3: Redis
-```bash
-microk8s kubectl apply -f k8s/redis-deployment.yaml
-microk8s kubectl apply -f k8s/redis-service.yaml
-```
-# Paso 4: MinIO
-```bash
-microk8s kubectl apply -f k8s/minio-pvc.yaml
-microk8s kubectl apply -f k8s/minio-deployment.yaml
-microk8s kubectl apply -f k8s/minio-service.yaml
-```
-# Paso 5: MLflow
-```bash
-microk8s kubectl apply -f k8s/mlflow-deployment.yaml
-microk8s kubectl apply -f k8s/mlflow-service.yaml
-```
-# Paso 6: Airflow
-```bash
-microk8s kubectl apply -f k8s/airflow-webserver.yaml
-microk8s kubectl apply -f k8s/airflow-scheduler.yaml
-microk8s kubectl apply -f k8s/airflow-worker.yaml
-microk8s kubectl apply -f k8s/airflow-triggerer.yaml
-```
-# Paso 7: FastAPI y Streamlit
-```bash
-microk8s kubectl apply -f k8s/fastapi-deployment.yaml
-microk8s kubectl apply -f k8s/fastapi-service.yaml
-microk8s kubectl apply -f k8s/streamlit-deployment.yaml
-microk8s kubectl apply -f k8s/streamlit-service.yaml
+microk8s kubectl apply -f manifest/loadtester/loadtester-deployment.yaml
+microk8s kubectl apply -f manifest/loadtester/kustomization.yaml
 ```
 
-# Paso 8: Observabilidad
+#### 2: Observabilidad
 ```bash
-microk8s kubectl apply -f k8s/locust-configmap.yaml
-microk8s kubectl apply -f k8s/prometheus-configmap.yaml
-microk8s kubectl apply -f k8s/fgrafana-deployment.yaml
-microk8s kubectl apply -f k8s/flocust-deployment.yaml
-microk8s kubectl apply -f k8s/prometheus-deployment.yaml
+microk8s kubectl apply -f manifests/grafana/grafana-datasource.yaml
+microk8s kubectl apply -f manifests/grafana/grafana-deployment.yaml
+microk8s kubectl apply -f manifests/grafana/grafana-service.yaml
+microk8s kubectl apply -f manifests/grafana/grafana-pvc.yaml
+microk8s kubectl apply -f manifests/grafana/kustomization.yaml
+
+microk8s kubectl apply -f manifests/prometheus/prometheus-configmap.yaml
+microk8s kubectl apply -f manifests/prometheus/prometheus-deployment.yaml
+microk8s kubectl apply -f manifests/prometheus/prometheus-service.yaml
+microk8s kubectl apply -f manifests/prometheus/prometheus-pvc.yaml
+microk8s kubectl apply -f manifests/prometheus/kustomization.yaml
 ```
 
-### 3. Puertos y Direcciones de Acceso
+### 3. Argo
 ```bash
-microk8s kubectl get svc
+microk8s kubectl apply -f manifests/argo/app.yaml
+microk8s kubectl apply -f manifests/argo/install-argocd.yaml
+microk8s kubectl apply -f manifests/argo/kustomization.yaml
 ```
 
 
+### 4. Orquestación y registro de experimentos
+```bash
+microk8s kubectl apply -f manifests/airflow/airflow-configmap.yaml
+microk8s kubectl apply -f manifests/airflow/airflow-scheduler.yaml
+microk8s kubectl apply -f manifests/airflow/airflow-triggerer.yaml
+microk8s kubectl apply -f manifests/airflow/airflow-webserver-service.yaml
+microk8s kubectl apply -f manifests/airflow/airflow-webserver.yaml
+microk8s kubectl apply -f manifests/airflow/airflow-worker.yaml
+microk8s kubectl apply -f manifests/airflow/kustomization.yaml
+
+microk8s kubectl apply -f manifests/mlflow/mlflow-deployment.yaml
+microk8s kubectl apply -f manifests/mlflow/mlflow-service.yaml
+microk8s kubectl apply -f manifests/mlflow/kustomization.yaml
+
+microk8s kubectl apply -f manifests/minio/minio-deployment.yaml
+microk8s kubectl apply -f manifests/minio/minio-service.yaml
+microk8s kubectl apply -f manifests/minio/minio-secret.yaml
+microk8s kubectl apply -f manifests/minio/minio-pvc.yaml
+microk8s kubectl apply -f manifests/minio/kustomization.yaml
+```
+
+### 5. Bases de datos
+```bash
+microk8s kubectl apply -f manifests/postgres-airflow/postgres-airflow-deployment.yaml
+microk8s kubectl apply -f manifests/postgres-airflow/postgres-airflow-service.yaml
+microk8s kubectl apply -f manifests/postgres-airflow/postgres-airflow-pvc.yaml
+microk8s kubectl apply -f manifests/postgres-airflow/kustomization.yaml
+
+microk8s kubectl apply -f manifests/postgres-data/postgres-data-deployment.yaml
+microk8s kubectl apply -f manifests/postgres-data/postgres-data-service.yaml
+microk8s kubectl apply -f manifests/postgres-data/postgres-data-pvc.yaml
+microk8s kubectl apply -f manifests/postgres-data/kustomization.yaml
+
+microk8s kubectl apply -f manifests/postgres-mlflow/postgres-mlflow-deployment.yaml
+microk8s kubectl apply -f manifests/postgres-mlflow/postgres-mlflow-service.yaml
+microk8s kubectl apply -f manifests/postgres-mlflow/postgres-mlflow-pvc.yaml
+microk8s kubectl apply -f manifests/postgres-mlflow/kustomization.yaml
+
+microk8s kubectl apply -f manifests/redis/redis-deployment.yaml
+microk8s kubectl apply -f manifests/redis/redis-service.yaml
+microk8s kubectl apply -f manifests/redis/kustomization.yaml
+```
+
+### 6. Verificar despliegue
+```bash
+microk8s kubectl get pods -n mlops-final
+microk8s kubectl get svc -n mlops-final
+```
+
+## 7· Acceso a los servicios: Segun los puertos indicados en el desarrollo acceder a los servicios (validar con el video).
 
 
