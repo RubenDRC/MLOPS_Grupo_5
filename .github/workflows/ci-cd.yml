@@ -3,11 +3,7 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main
-    paths:
-      - 'MLOPS_Grupo_5/Proyecto_Final_Grupo_5/fastapi/**'
-      - 'MLOPS_Grupo_5/Proyecto_Final_Grupo_5/loadtester/**'
-      - 'MLOPS_Grupo_5/Proyecto_Final_Grupo_5/streamlit/**'
+      - main  # Ejecuta cuando se hace push a la rama main
 
 jobs:
   build-and-push:
@@ -29,7 +25,11 @@ jobs:
           NAME=${{ matrix.component }}
           IMAGE="rubenromero800/$NAME"
           CURRENT=$(curl -s "https://hub.docker.com/v2/repositories/$IMAGE/tags" | jq -r '.results[].name' | grep '^v' | sed 's/v//' | sort -nr | head -n1)
-          NEXT=$((CURRENT + 1))
+          if [[ -z "$CURRENT" ]]; then
+            NEXT=1
+          else
+            NEXT=$((CURRENT + 1))
+          fi
           echo "next_version=v$NEXT" >> $GITHUB_OUTPUT
 
       - name: Build and tag image
