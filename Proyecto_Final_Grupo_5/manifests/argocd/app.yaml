@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/RubenDRC/MLOPS_Grupo_5.git
     targetRevision: main
-    path: manifests
+    path: Proyecto_Final_Grupo_5/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: mlops-final
