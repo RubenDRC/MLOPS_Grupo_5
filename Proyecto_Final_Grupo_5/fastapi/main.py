@@ -26,7 +26,7 @@ REQUEST_LATENCY = Histogram('predict_latency_seconds', 'Tiempo de latencia de pr
 
 @app.get("/")
 def root():
-    return {"message": "Bienvenido a la API de MLflow para predicción de precios V2", "docs": "/docs"}
+    return {"message": "Bienvenido a la API de MLflow para predicción de precios V3", "docs": "/docs"}
 
 @app.get("/metrics")
 def metrics():
