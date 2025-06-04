@@ -1,7 +1,7 @@
 # 🚀 Proyecto Final – MLOps - **Grupo 5**
 
 ## 🧩 Descripción General
-Este proyecto implementa un pipeline de MLOps que entrena modelos con GitHub Actions, construye imágenes Docker y los despliega en un clúster Kubernetes con MicroK8s. La API (FastAPI) y el frontend (Streamlit) consultan modelos desde MLflow y están desplegados en una máquina virtual externa, con monitoreo vía Prometheus y Grafana.
+Este proyecto implementa un pipeline de MLOps que entrena modelos con GitHub Actions, construye imágenes Docker y los despliega en un clúster Kubernetes con MicroK8s. La API (FastAPI) y el frontend (Streamlit) consultan modelos desde MLflow y están desplegados en dos máquinas virtuales, con monitoreo vía Prometheus y Grafana.
 
 ---
 ## 🎯 Objetivo
@@ -12,9 +12,8 @@ Implementar un sistema de MLOps completo que abarque:
 - Entrenamiento y reentrenamiento continuo de modelos con control de versiones usando **MLflow**.
 - Registro y versionamiento de modelos, seleccionando automáticamente el mejor para producción.
 - Exposición del modelo de producción a través de una **API FastAPI** conectada a MLflow.
-- Interfaz gráfica desarrollada en **Streamlit** para la inferencia y explicabilidad con SHAP.
+- Interfaz gráfica desarrollada en **Streamlit** para la inferencia.
 - Observabilidad mediante **Prometheus** y **Grafana**.
-- Empaquetado de todos los componentes como contenedores Docker.
 - Automatización de builds y publicación de imágenes con **GitHub Actions**.
 - Despliegue de todos los servicios sobre **Kubernetes**, orquestado automáticamente mediante **Argo CD**.
 
@@ -30,10 +29,11 @@ Implementar un sistema de MLOps completo que abarque:
 - **Streamlit** como interfaz de usuario para realizar inferencia y visualización de explicabilidad.
 - **Prometheus** y **Grafana** para monitoreo y visualización.
 - **GitHub Actions** para integración y entrega continua (CI/CD).
-- **Docker** para contenerización de los servicios.
+- **Docker** para contenerización de algunos servicios.
 - **Kubernetes** para despliegue orquestado de microservicios.
 - **Argo CD** para GitOps y sincronización automática desde el repositorio.
-- 
+
+---
 
 ## 📂 Estructura del desarrollo:
 
@@ -84,7 +84,7 @@ MLOps_Grupo_5/
 
 ---
 
-**Si desea ver la prueba y despliegue del sistema,** puede verlo en el siguiente video: https://youtu.be/i4d9ynKVjt8 
+**Si desea ver la prueba y despliegue del sistema,** puede verlo en el siguiente video: https://www.youtube.com/watch?v=bD0nJ31p1rw
 
 ---
 
@@ -103,7 +103,7 @@ microk8s kubectl apply -f manifest/streamlit/kustomization.yaml
 microk8s kubectl apply -f manifest/loadtester/loadtester-deployment.yaml
 microk8s kubectl apply -f manifest/loadtester/kustomization.yaml
 ```
-
+---
 #### 2: Observabilidad
 ```bash
 microk8s kubectl apply -f manifests/grafana/grafana-datasource.yaml
@@ -118,7 +118,7 @@ microk8s kubectl apply -f manifests/prometheus/prometheus-service.yaml
 microk8s kubectl apply -f manifests/prometheus/prometheus-pvc.yaml
 microk8s kubectl apply -f manifests/prometheus/kustomization.yaml
 ```
-
+---
 ### 3. Argo
 ```bash
 microk8s kubectl apply -f manifests/argo/app.yaml
@@ -126,7 +126,7 @@ microk8s kubectl apply -f manifests/argo/install-argocd.yaml
 microk8s kubectl apply -f manifests/argo/kustomization.yaml
 ```
 
-
+---
 ### 4. Orquestación y registro de experimentos
 ```bash
 microk8s kubectl apply -f manifests/airflow/airflow-configmap.yaml
@@ -147,7 +147,7 @@ microk8s kubectl apply -f manifests/minio/minio-secret.yaml
 microk8s kubectl apply -f manifests/minio/minio-pvc.yaml
 microk8s kubectl apply -f manifests/minio/kustomization.yaml
 ```
-
+---
 ### 5. Bases de datos
 ```bash
 microk8s kubectl apply -f manifests/postgres-airflow/postgres-airflow-deployment.yaml
@@ -169,13 +169,30 @@ microk8s kubectl apply -f manifests/redis/redis-deployment.yaml
 microk8s kubectl apply -f manifests/redis/redis-service.yaml
 microk8s kubectl apply -f manifests/redis/kustomization.yaml
 ```
-
+---
 ### 6. Verificar despliegue
 ```bash
 microk8s kubectl get pods -n mlops-final
 microk8s kubectl get svc -n mlops-final
 ```
-
+---
 ## 7· Acceso a los servicios: Segun los puertos indicados en el desarrollo acceder a los servicios (validar con el video).
+---
+## 8. Credenciales de las máquinas virtuales
 
+- **Usuario escritorio remoto:** estudiante
+-**Contraseña:** 4Silvia+1974
+-**Dirección IP:** 10.43.101.195
+-**Puerto:** 3389
+-**Protocolo:** RDP
+-**Sistema Operativo** Ubuntu 22.04.5 LTS ( Jammy)
+
+- **Usuario escritorio remoto:** estudiante
+-**Contraseña:** 4Lopez/19418
+-**Dirección IP:** 10.43.101.188
+-**Puerto:** 3389
+-**Protocolo:** RDP
+-**Sistema Operativo** Ubuntu 22.04.5 LTS ( Jammy)
+
+---
 
