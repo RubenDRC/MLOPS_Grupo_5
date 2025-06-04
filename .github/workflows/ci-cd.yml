@@ -3,7 +3,7 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main  # Ejecuta cuando se hace push a la rama main
+      - main
 
 jobs:
   build-and-push:
@@ -34,7 +34,7 @@ jobs:
 
       - name: Build and tag image
         run: |
-          cd MLOPS_Grupo_5/Proyecto_Final_Grupo_5/${{ matrix.component }}
+          cd Proyecto_Final_Grupo_5/${{ matrix.component }}
           docker build -t rubenromero800/${{ matrix.component }}:${{ steps.version.outputs.next_version }} .
 
       - name: Push image
