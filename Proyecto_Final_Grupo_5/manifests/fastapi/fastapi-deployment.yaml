@@ -19,7 +19,7 @@ spec:
         kubernetes.io/hostname: noam24
       containers:
         - name: fastapi
-          image: rubenromero800/fastapi:v6
+          image: rubenromero800/fastapi:v7
           ports:
             - containerPort: 8000
           env:
